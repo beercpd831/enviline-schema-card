@@ -75,7 +75,12 @@ entities:
 | `hppower` | boiler | Heat output |
 | `electric_power` | – | Electrical power of the heat pump (any W or kW sensor) |
 | `cop` | – | COP sensor; if empty it is calculated from `hppower` and `electric_power` while the compressor runs |
+| `nrgsupptotal`, `nrgconstotal` | boiler | Lifetime energy supplied / consumed, used for the SCOP fallback |
 | `currtemp`, `seltemp`, `dampedoutdoortemp` | thermostat | Room temperature, setpoint, damped outdoor temperature |
+
+## Without a separate power meter
+
+EMS-ESP has no live electrical power for the EnviLine, so `electric_power` has to come from a separate meter (kWh meter, smart plug, P1 sub-meter). Without one, the *Electric* and *COP* labels are hidden and the card shows **SCOP** instead: `nrgsupptotal / nrgconstotal`, the seasonal COP since installation from the EMS-ESP energy counters (backup heater included). The remaining power labels move up so no gap is left.
 
 ## Notes
 

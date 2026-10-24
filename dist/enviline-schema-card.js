@@ -4,7 +4,7 @@
  * heat pump read through EMS-ESP. Entities are auto-detected from the
  * EMS-ESP names and can be overridden per item in the card config.
  */
-const CARD_VERSION = "0.1.0";
+const CARD_VERSION = "0.2.0";
 
 // SVG coordinate system (viewBox 0 -25 1060 690). Label positions are given
 // in SVG units and converted to percentages of the card.
@@ -49,6 +49,8 @@ const ENTITY_DEFS = {
   hppower: ["sensor", "hppower"],
   electric_power: ["sensor", null],
   cop: ["sensor", null],
+  nrgsupptotal: ["sensor", "nrgsupptotal"],
+  nrgconstotal: ["sensor", "nrgconstotal"],
   auxheaterstatus: ["sensor", "auxheaterstatus"],
   ww3wayvalve: ["binary_sensor", "ww3wayvalve"],
   wwcurtemp: ["sensor", "wwcurtemp"],
@@ -105,6 +107,9 @@ const I18N = {
       hppower: ["Warmte ", "Afgegeven warmtevermogen"],
       electric_power: ["Elektrisch ", "Elektrisch vermogen warmtepomp"],
       cop: ["COP ", "COP - warmte gedeeld door elektrisch vermogen"],
+      scop: ["SCOP ", "Seizoens-COP sinds installatie: opgewekte energie gedeeld door energieverbruik (EMS-ESP-tellers, inclusief bijverwarming)"],
+      nrgsupptotal: ["", "Totaal opgewekte energie (EMS-ESP)"],
+      nrgconstotal: ["", "Totaal energieverbruik (EMS-ESP)"],
       auxheaterstatus: ["", "Status elektrische bijverwarming"],
       ww3wayvalve: ["", "3-wegklep warm water"],
       wwcurtemp: ["Boven ", "Warm water - interne temperatuur"],
@@ -160,6 +165,9 @@ const I18N = {
       hppower: ["Heat ", "Heat output"],
       electric_power: ["Electric ", "Heat pump electrical power"],
       cop: ["COP ", "COP - heat output divided by electrical power"],
+      scop: ["SCOP ", "Seasonal COP since installation: energy supplied divided by energy consumed (EMS-ESP counters, backup heater included)"],
+      nrgsupptotal: ["", "Total energy supplied (EMS-ESP)"],
+      nrgconstotal: ["", "Total energy consumed (EMS-ESP)"],
       auxheaterstatus: ["", "Electric backup heater status"],
       ww3wayvalve: ["", "Hot water 3-way valve"],
       wwcurtemp: ["Top ", "Hot water - internal temperature"],
@@ -195,6 +203,7 @@ const LABELS = [
   ["electric_power", 258, 384, true, C.amber],
   ["hppower", 258, 409, true, C.amber],
   ["cop", 258, 434, true, C.amber],
+  ["scop", 258, 459, true, C.amber],
   ["hptr3", 320, 527, false, C.liquid],
   ["hptr4", 180, 527, false, C.liquid],
   ["hptc3", 435, 182, true, C.flow],
@@ -385,7 +394,7 @@ const STYLE = `
 `;
 
 function autoDetect(hass, key) {
-  const [domain, suffix] = ENTITY_DEFS[key];
+  const [domain, suffix] = ENTITY_DEFS[key] || [];
   if (!suffix || !hass) return undefined;
   const re = new RegExp(`^${domain}\\.(.*_)?${suffix}$`);
   const hits = Object.keys(hass.states).filter((id) => re.test(id));
@@ -479,7 +488,7 @@ class EnvilineSchemaCard extends HTMLElement {
     this.shadowRoot.querySelectorAll("[data-key]").forEach((el) => {
       el.addEventListener("click", (ev) => {
         ev.stopPropagation();
-        const entityId = this._entity(el.dataset.key);
+        const entityId = this._entity(el.dataset.key === "scop" ? "nrgsupptotal" : el.dataset.key);
         if (!entityId) return;
         this.dispatchEvent(new CustomEvent("hass-more-info", { bubbles: true, composed: true, detail: { entityId } }));
       });
@@ -512,6 +521,12 @@ class EnvilineSchemaCard extends HTMLElement {
           title = t.cop_calc;
         }
       }
+      // SCOP from the EMS-ESP energy counters, as fallback when no live COP is possible.
+      if (key === "scop" && !this._entity("electric_power") && !this._entity("cop")) {
+        const supp = this._num("nrgsupptotal");
+        const cons = this._num("nrgconstotal");
+        if (supp !== undefined && cons > 0) text = `${prefix}${(supp / cons).toFixed(2)}`;
+      }
       const show = text !== undefined && !hide.includes(key);
       el.hidden = !show;
       if (show) {
@@ -519,6 +534,13 @@ class EnvilineSchemaCard extends HTMLElement {
         if (el.title !== title) el.title = title;
       }
     });
+
+    // Stack the visible power labels from the top so hidden ones leave no gap.
+    let row = 0;
+    for (const key of ["electric_power", "hppower", "cop", "scop"]) {
+      const el = root.querySelector(`.lbl[data-key="${key}"]`);
+      if (!el.hidden) el.style.top = `${pctY(384 + 25 * row++).toFixed(2)}%`;
+    }
 
     const running = (this._num("hpcompspd") ?? 0) > 0;
     const cooling = this._is("hp4way", "on");
@@ -567,7 +589,7 @@ const EDITOR_GROUPS = [
   ["outdoor", ["outdoortemp", "hptl2", "hpta4", "hpea0", "hpmode"]],
   ["water", ["hptc3", "hptc1", "hptc0", "curflowtemp", "targetflowtemp", "heatingpump", "hpcircspd", "ww3wayvalve", "vc0valve", "auxheaterstatus", "headertemp", "pc1on"]],
   ["dhw", ["wwcurtemp", "hptw1"]],
-  ["power", ["hppower", "electric_power", "cop"]],
+  ["power", ["hppower", "electric_power", "cop", "nrgsupptotal", "nrgconstotal"]],
   ["room", ["currtemp", "seltemp", "dampedoutdoortemp"]],
 ];
 const GROUP_TITLES = {
