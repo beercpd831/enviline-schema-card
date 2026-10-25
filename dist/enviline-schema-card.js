@@ -4,7 +4,7 @@
  * heat pump read through EMS-ESP. Entities are auto-detected from the
  * EMS-ESP names and can be overridden per item in the card config.
  */
-const CARD_VERSION = "0.2.0";
+const CARD_VERSION = "0.3.0";
 
 // SVG coordinate system (viewBox 0 -25 1060 690). Label positions are given
 // in SVG units and converted to percentages of the card.
@@ -26,6 +26,14 @@ const C = {
   idle: "#b0bec5",
 };
 
+// Saturation pressure fits ln(p / bar abs) = A - B / (T + C), T in °C,
+// fitted to refrigerant tables from -30 to 60 °C (error below 0.5 %).
+const REFRIGERANTS = {
+  R410A: [10.5455, 2248.41, 265.5],
+  R32: [10.6461, 2274.77, 266.0],
+  R290: [9.6478, 2140.6, 264.5],
+};
+
 // key: [domain, EMS-ESP suffix used for auto-detection]
 const ENTITY_DEFS = {
   outdoortemp: ["sensor", "outdoortemp"],
@@ -38,6 +46,8 @@ const ENTITY_DEFS = {
   hptr5: ["sensor", "hptr5"],
   hpph1: ["sensor", "hpph1"],
   hptr6: ["sensor", "hptr6"],
+  superheat_suction: ["sensor", null],
+  superheat_discharge: ["sensor", null],
   hpcompspd: ["sensor", "hpcompspd"],
   hptr1: ["sensor", "hptr1"],
   hptr3: ["sensor", "hptr3"],
@@ -85,6 +95,10 @@ const I18N = {
     threeway: "3-wegklep",
     dhw: "Warm water",
     cop_calc: "COP (berekend uit warmte en elektrisch vermogen)",
+    legend_p: "PL1 / PH1 = druksensor, omgerekend naar verzadigingstemperatuur",
+    legend_p_ref: "PL1 / PH1 = druksensor: bar (abs., {r}) en verzadigingstemp.",
+    pressure_note: "Druk absoluut, berekend uit de verzadigingstemperatuur voor {r}",
+    legend_t: "TR5 / TR6 = gemeten gastemperatuur · Overv. = TR − P",
     d: {
       outdoortemp: ["Buiten ", "Buitentemperatuur (sensor warmtepomp)"],
       hpmode: ["", "Modus warmtepomp (instelling)"],
@@ -92,10 +106,12 @@ const I18N = {
       hptl2: ["TL2 ", "TL2 - Temperatuur luchtinlaat"],
       hpta4: ["TA4 ", "TA4 - Temperatuur condensaat-afvoerbak"],
       hpea0: ["Verw. ", "EA0 - Verwarming afvoerbak"],
-      hppl1: ["PL1 ", "PL1 - Temperatuur lagedrukzijde"],
-      hptr5: ["TR5 ", "TR5 - Compressor ingangstemperatuur (zuiggas)"],
-      hpph1: ["PH1 ", "PH1 - Temperatuur hogedrukzijde"],
-      hptr6: ["TR6 ", "TR6 - Compressor uitgangstemperatuur (persgas)"],
+      hppl1: ["PL1 ", "PL1 - Lagedruksensor, omgerekend naar verzadigingstemperatuur (verdampingstemperatuur)"],
+      hptr5: ["TR5 ", "TR5 - Gemeten zuiggastemperatuur (compressor in)"],
+      hpph1: ["PH1 ", "PH1 - Hogedruksensor, omgerekend naar verzadigingstemperatuur (condensatietemperatuur)"],
+      hptr6: ["TR6 ", "TR6 - Gemeten persgastemperatuur (compressor uit)"],
+      superheat_suction: ["Overv. ", "Oververhitting zuiggas = TR5 - PL1 (normaal enkele K)"],
+      superheat_discharge: ["Overv. ", "Oververhitting persgas = TR6 - PH1"],
       hpcompspd: ["Compressor ", "Snelheid compressor"],
       hptr1: ["TR1 ", "TR1 - Compressortemperatuur"],
       hptr3: ["TR3 ", "TR3 - Temperatuur koudemiddel vloeistofzijde"],
@@ -143,6 +159,10 @@ const I18N = {
     threeway: "3-way valve",
     dhw: "Hot water",
     cop_calc: "COP (calculated from heat output and electrical power)",
+    legend_p: "PL1 / PH1 = pressure sensor, shown as saturation temperature",
+    legend_p_ref: "PL1 / PH1 = pressure sensor: bar (abs., {r}) and saturation temp.",
+    pressure_note: "Absolute pressure, calculated from the saturation temperature for {r}",
+    legend_t: "TR5 / TR6 = measured gas temperature · SH = TR − P",
     d: {
       outdoortemp: ["Outdoor ", "Outdoor temperature (heat pump sensor)"],
       hpmode: ["", "Heat pump mode (setting)"],
@@ -150,10 +170,12 @@ const I18N = {
       hptl2: ["TL2 ", "TL2 - Air inlet temperature"],
       hpta4: ["TA4 ", "TA4 - Drain pan temperature"],
       hpea0: ["Heat ", "EA0 - Drain pan heater"],
-      hppl1: ["PL1 ", "PL1 - Low pressure side temperature"],
-      hptr5: ["TR5 ", "TR5 - Compressor inlet (suction gas)"],
-      hpph1: ["PH1 ", "PH1 - High pressure side temperature"],
-      hptr6: ["TR6 ", "TR6 - Compressor outlet (discharge gas)"],
+      hppl1: ["PL1 ", "PL1 - Low pressure sensor, shown as saturation temperature (evaporating temperature)"],
+      hptr5: ["TR5 ", "TR5 - Measured suction gas temperature (compressor inlet)"],
+      hpph1: ["PH1 ", "PH1 - High pressure sensor, shown as saturation temperature (condensing temperature)"],
+      hptr6: ["TR6 ", "TR6 - Measured discharge gas temperature (compressor outlet)"],
+      superheat_suction: ["SH ", "Suction superheat = TR5 - PL1 (normally a few K)"],
+      superheat_discharge: ["SH ", "Discharge superheat = TR6 - PH1"],
       hpcompspd: ["Compressor ", "Compressor speed"],
       hptr1: ["TR1 ", "TR1 - Compressor temperature"],
       hptr3: ["TR3 ", "TR3 - Refrigerant liquid side temperature"],
@@ -194,10 +216,12 @@ const LABELS = [
   ["hptl2", 80, 125, false, C.air],
   ["hpta4", 80, 505, false, C.air],
   ["hpea0", 80, 527, false, C.amber],
-  ["hppl1", 150, 195, false, C.suction],
-  ["hptr5", 150, 217, false, C.suction],
-  ["hpph1", 325, 168, false, C.discharge],
-  ["hptr6", 325, 190, false, C.discharge],
+  ["hppl1", 150, 204, false, C.suction],
+  ["hptr5", 150, 233, false, C.suction],
+  ["superheat_suction", 150, 255, false, C.suction],
+  ["hpph1", 330, 150, false, C.discharge],
+  ["hptr6", 330, 178, false, C.discharge],
+  ["superheat_discharge", 330, 198, false, C.discharge],
   ["hpcompspd", 240, 297, true, C.amber],
   ["hptr1", 240, 321, false, C.neutral],
   ["electric_power", 258, 384, true, C.amber],
@@ -243,7 +267,7 @@ const ARROWS = [
 const arrowSvg = ([id, x, y, a, col]) =>
   `<polygon id="${id}" class="arrow" points="7,0 -6,-7 -6,7" fill="${col}" transform="translate(${x} ${y}) rotate(${a})"/>`;
 
-function buildSvg(t) {
+function buildSvg(t, ref) {
   return `
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="${VB_X} ${VB_Y} ${VB_W} ${VB_H}" font-family="sans-serif">
   <defs>
@@ -310,7 +334,7 @@ function buildSvg(t) {
   <path d="M400 215 H558" fill="none" stroke="#e53935" stroke-width="5"/>
   <path d="M602 215 H674" fill="none" stroke="#e53935" stroke-width="5"/>
   <path d="M706 215 H820" fill="none" stroke="#e53935" stroke-width="5"/>
-  <path d="M690 231 V300" fill="none" stroke="#e53935" stroke-width="5"/>
+  <path d="M690 231 V290" fill="none" stroke="#e53935" stroke-width="5"/>
   <path d="M870 215 H904" fill="none" stroke="#e57373" stroke-width="4"/>
   <path d="M936 215 H1010 V245 H895 V275 H1010 V305 H895 V335 H1010 V365 H895 V395 H1010 V420 H870" fill="none" stroke="#e57373" stroke-width="4" stroke-linejoin="round"/>
   <path d="M820 420 H792 V495 H766" fill="none" stroke="#1e88e5" stroke-width="5"/>
@@ -340,7 +364,7 @@ function buildSvg(t) {
     <line x1="690" y1="215" x2="690" y2="203" stroke="#9e9e9e" stroke-width="1.8"/><circle cx="690" cy="197" r="6" fill="none" stroke="#9e9e9e" stroke-width="1.8"/>
   </g>
   <rect x="560" y="290" width="160" height="180" rx="30" fill="#e53935" fill-opacity="0.08" stroke="#9e9e9e" stroke-width="2"/>
-  <path d="M690 300 V315 L660 327 L700 339 L660 351 L700 363 L660 375 L700 387 L660 399 L700 411 L660 423 L700 435 L690 445 V470" fill="none" stroke="#e57373" stroke-width="3" stroke-linejoin="round"/>
+  <path d="M690 290 V315 L660 327 L700 339 L660 351 L700 363 L660 375 L700 387 L660 399 L700 411 L660 423 L700 435 L690 445 V470" fill="none" stroke="#e57373" stroke-width="3" stroke-linejoin="round"/>
   <g class="click" data-key="heatingpump">
     <circle cx="670" cy="495" r="16" fill="#1e88e5" fill-opacity="0.2" stroke="#1e88e5" stroke-width="2"/>
     <polygon id="pump_hp" class="pump" points="10,0 -7,-10 -7,10" transform="translate(670 495) rotate(180)"/>
@@ -350,14 +374,18 @@ function buildSvg(t) {
     <polygon id="pump_pc1" class="pump" points="10,0 -7,-10 -7,10" transform="translate(920 215)"/>
   </g>
   <g class="dot">
-    <line x1="170" y1="195" x2="200" y2="195" stroke="#4fc3f7"/><circle cx="200" cy="195" r="3.5" fill="#4fc3f7"/>
-    <line x1="305" y1="168" x2="280" y2="168" stroke="#ff7043"/><circle cx="280" cy="168" r="3.5" fill="#ff7043"/>
+    <line x1="170" y1="204" x2="200" y2="204" stroke="#4fc3f7"/><circle cx="200" cy="204" r="3.5" fill="#4fc3f7"/>
+    <line x1="305" y1="150" x2="280" y2="150" stroke="#ff7043"/><circle cx="280" cy="150" r="3.5" fill="#ff7043"/>
     <line x1="320" y1="519" x2="320" y2="500" stroke="#ffb74d"/><circle cx="320" cy="500" r="3.5" fill="#ffb74d"/>
     <line x1="180" y1="519" x2="180" y2="500" stroke="#ffb74d"/><circle cx="180" cy="500" r="3.5" fill="#ffb74d"/>
     <line x1="435" y1="190" x2="435" y2="215" stroke="#e53935"/><circle cx="435" cy="215" r="3.5" fill="#e53935"/>
     <line x1="544" y1="162" x2="544" y2="215" stroke="#e53935"/><circle cx="544" cy="215" r="3.5" fill="#e53935"/>
     <line x1="588" y1="510" x2="588" y2="495" stroke="#1e88e5"/><circle cx="588" cy="495" r="3.5" fill="#1e88e5"/>
     <line x1="700" y1="131" x2="768" y2="215" stroke="#e53935"/><circle cx="768" cy="215" r="3.5" fill="#e53935"/>
+  </g>
+  <g class="txt" font-size="11" text-anchor="middle">
+    <text x="300" y="559">${ref ? t.legend_p_ref.replace("{r}", ref) : t.legend_p}</text>
+    <text x="300" y="573">${t.legend_t}</text>
   </g>
   ${ARROWS.map(arrowSvg).join("\n  ")}
 </svg>`;
@@ -385,6 +413,7 @@ const STYLE = `
   }
   .lbl.p { font-size: clamp(11px, 1.45cqw, 24px); font-weight: 600; color: var(--primary-text-color); padding: 0.05em 0.55em; }
   .lbl.b { font-weight: 600; color: var(--primary-text-color); }
+  .lbl.two { white-space: pre; text-align: center; border-radius: 0.7em; }
   .lbl[hidden] { display: none; }
   .comp {
     position: absolute; transform: translate(-50%, -50%); line-height: 0; cursor: pointer;
@@ -403,6 +432,12 @@ function autoDetect(hass, key) {
   hits.sort((a, b) => (/boiler|thermostat|ems/.test(b) ? 1 : 0) - (/boiler|thermostat|ems/.test(a) ? 1 : 0) || a.length - b.length);
   return hits[0];
 }
+
+// Labels without an entity of their own open this one's history on click.
+const FALLBACK_ENTITY = { scop: "nrgsupptotal", superheat_suction: "hptr5", superheat_discharge: "hptr6" };
+
+// Calculated superheat: [gas temperature, saturation temperature from the pressure sensor]
+const SUPERHEAT = { superheat_suction: ["hptr5", "hppl1"], superheat_discharge: ["hptr6", "hpph1"] };
 
 class EnvilineSchemaCard extends HTMLElement {
   static getConfigElement() {
@@ -461,6 +496,16 @@ class EnvilineSchemaCard extends HTMLElement {
     return Number.isFinite(v) ? v : undefined;
   }
 
+  _refrigerant() {
+    const ref = String(this._config.refrigerant || "").toUpperCase();
+    return REFRIGERANTS[ref] ? ref : undefined;
+  }
+
+  _fmt1(v) {
+    const lang = this._hass.locale?.language || this._hass.language || "en";
+    return new Intl.NumberFormat(lang, { minimumFractionDigits: 1, maximumFractionDigits: 1 }).format(v);
+  }
+
   _format(stateObj) {
     if (this._hass.formatEntityState) return this._hass.formatEntityState(stateObj);
     const unit = stateObj.attributes.unit_of_measurement;
@@ -480,7 +525,7 @@ class EnvilineSchemaCard extends HTMLElement {
       <style>${STYLE}</style>
       <ha-card class="${this._config.transparent ? "bare" : ""}">
         <div class="wrap">
-          ${buildSvg(t)}
+          ${buildSvg(t, this._refrigerant())}
           ${labels}
           <div class="comp" data-key="hpcompspd" style="left:${pctX(240)}%;top:${pctY(240)}%"><ha-icon icon="mdi:heat-pump"></ha-icon></div>
         </div>
@@ -488,7 +533,8 @@ class EnvilineSchemaCard extends HTMLElement {
     this.shadowRoot.querySelectorAll("[data-key]").forEach((el) => {
       el.addEventListener("click", (ev) => {
         ev.stopPropagation();
-        const entityId = this._entity(el.dataset.key === "scop" ? "nrgsupptotal" : el.dataset.key);
+        const key = el.dataset.key;
+        const entityId = this._entity(key) || this._entity(FALLBACK_ENTITY[key]);
         if (!entityId) return;
         this.dispatchEvent(new CustomEvent("hass-more-info", { bubbles: true, composed: true, detail: { entityId } }));
       });
@@ -511,6 +557,13 @@ class EnvilineSchemaCard extends HTMLElement {
       const so = this._stateObj(key);
       if (so) {
         text = prefix + this._format(so);
+        const ref = this._refrigerant();
+        const sat = this._num(key);
+        if (ref && (key === "hppl1" || key === "hpph1") && sat !== undefined) {
+          const [a, b, c] = REFRIGERANTS[ref];
+          text = `${prefix}${this._fmt1(Math.exp(a - b / (sat + c)))} bar\n${this._format(so)}`;
+          title = `${desc}. ${t.pressure_note.replace("{r}", ref)}\n${t.history}`;
+        }
       } else if (key === "cop") {
         const heat = this._num("hppower");
         const elec = this._num("electric_power");
@@ -521,6 +574,11 @@ class EnvilineSchemaCard extends HTMLElement {
           title = t.cop_calc;
         }
       }
+      if (!so && SUPERHEAT[key] && (this._num("hpcompspd") ?? 0) > 0) {
+        const gas = this._num(SUPERHEAT[key][0]);
+        const sat = this._num(SUPERHEAT[key][1]);
+        if (gas !== undefined && sat !== undefined) text = `${prefix}${this._fmt1(gas - sat)} K`;
+      }
       // SCOP from the EMS-ESP energy counters, as fallback when no live COP is possible.
       if (key === "scop" && !this._entity("electric_power") && !this._entity("cop")) {
         const supp = this._num("nrgsupptotal");
@@ -530,6 +588,7 @@ class EnvilineSchemaCard extends HTMLElement {
       const show = text !== undefined && !hide.includes(key);
       el.hidden = !show;
       if (show) {
+        el.classList.toggle("two", text.includes("\n"));
         if (el.textContent !== text) el.textContent = text;
         if (el.title !== title) el.title = title;
       }
@@ -585,7 +644,7 @@ class EnvilineSchemaCard extends HTMLElement {
 }
 
 const EDITOR_GROUPS = [
-  ["refrigerant", ["hpcompspd", "hpactivity", "hp4way", "hppl1", "hptr5", "hpph1", "hptr6", "hptr1", "hptr3", "hptr4"]],
+  ["refrigerant", ["hpcompspd", "hpactivity", "hp4way", "hppl1", "hptr5", "superheat_suction", "hpph1", "hptr6", "superheat_discharge", "hptr1", "hptr3", "hptr4"]],
   ["outdoor", ["outdoortemp", "hptl2", "hpta4", "hpea0", "hpmode"]],
   ["water", ["hptc3", "hptc1", "hptc0", "curflowtemp", "targetflowtemp", "heatingpump", "hpcircspd", "ww3wayvalve", "vc0valve", "auxheaterstatus", "headertemp", "pc1on"]],
   ["dhw", ["wwcurtemp", "hptw1"]],
@@ -593,8 +652,8 @@ const EDITOR_GROUPS = [
   ["room", ["currtemp", "seltemp", "dampedoutdoortemp"]],
 ];
 const GROUP_TITLES = {
-  nl: { refrigerant: "Koudemiddel en compressor", outdoor: "Buitenunit", water: "Watercircuit", dhw: "Warm water", power: "Vermogen", room: "Thermostaat", auto: "EMS-ESP-entiteiten automatisch zoeken", transparent: "Transparante achtergrond", language: "Taal (leeg = HA-taal)" },
-  en: { refrigerant: "Refrigerant and compressor", outdoor: "Outdoor unit", water: "Water circuit", dhw: "Hot water", power: "Power", room: "Thermostat", auto: "Auto-detect EMS-ESP entities", transparent: "Transparent background", language: "Language (empty = HA language)" },
+  nl: { refrigerant: "Koudemiddel en compressor", outdoor: "Buitenunit", water: "Watercircuit", dhw: "Warm water", power: "Vermogen", room: "Thermostaat", auto: "EMS-ESP-entiteiten automatisch zoeken", transparent: "Transparante achtergrond", language: "Taal (leeg = HA-taal)", refrigerant: "Koudemiddel (voor druk in bar, zie typeplaatje)" },
+  en: { refrigerant: "Refrigerant and compressor", outdoor: "Outdoor unit", water: "Water circuit", dhw: "Hot water", power: "Power", room: "Thermostat", auto: "Auto-detect EMS-ESP entities", transparent: "Transparent background", language: "Language (empty = HA language)", refrigerant: "Refrigerant (for pressure in bar, see type plate)" },
 };
 
 class EnvilineSchemaCardEditor extends HTMLElement {
@@ -622,6 +681,7 @@ class EnvilineSchemaCardEditor extends HTMLElement {
         for (const [k, v] of Object.entries(config.entities || {})) if (v) entities[k] = v;
         config.entities = entities;
         if (!config.language) delete config.language;
+        if (!config.refrigerant) delete config.refrigerant;
         this.dispatchEvent(new CustomEvent("config-changed", { bubbles: true, composed: true, detail: { config } }));
       });
       this.appendChild(this._form);
@@ -631,6 +691,7 @@ class EnvilineSchemaCardEditor extends HTMLElement {
     this._form.schema = [
       { name: "auto_detect", selector: { boolean: {} } },
       { name: "transparent", selector: { boolean: {} } },
+      { name: "refrigerant", selector: { select: { mode: "dropdown", options: Object.keys(REFRIGERANTS) } } },
       { name: "language", selector: { select: { mode: "dropdown", options: [{ value: "nl", label: "Nederlands" }, { value: "en", label: "English" }] } } },
       ...EDITOR_GROUPS.map(([group, keys]) => ({
         type: "expandable",
@@ -643,6 +704,7 @@ class EnvilineSchemaCardEditor extends HTMLElement {
       if (s.name === "auto_detect") return g.auto;
       if (s.name === "transparent") return g.transparent;
       if (s.name === "language") return g.language;
+      if (s.name === "refrigerant") return g.refrigerant;
       const def = d[s.name];
       if (!def) return s.name;
       const found = this._config.entities?.[s.name] ? "" : autoDetect(this._hass, s.name);
