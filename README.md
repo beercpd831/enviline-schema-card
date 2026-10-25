@@ -42,6 +42,7 @@ Auto-detection looks for entity ids that end in the EMS-ESP short name (`…_hpt
 type: custom:enviline-schema-card
 transparent: true          # no card background
 language: nl               # nl or en, default = HA language
+refrigerant: R410A         # R410A, R32 or R290: also show PL1/PH1 as pressure in bar
 hide: [hpea0, hptr1]       # labels to leave out
 entities:
   electric_power: sensor.power_meter_heat_pump   # not from EMS-ESP
@@ -82,6 +83,8 @@ entities:
 ### PL1 and PH1 are pressures
 
 EMS-ESP reports the low and high pressure sensors PL1 and PH1 as the saturation temperature that belongs to the measured pressure (evaporating and condensing temperature), not in bar. TR5 and TR6 are the real gas temperatures at the same points, so the difference is the superheat: TR5 − PL1 at the suction side (normally a few K) and TR6 − PH1 at the discharge side. The card shows both, plus a short legend under the outdoor unit.
+
+Set `refrigerant` (see the type plate of the outdoor unit) to also show PL1 and PH1 as absolute pressure in bar. The card converts the saturation temperature with a fit to the refrigerant's saturation table (within 0.5 % from −30 to 60 °C).
 
 ## Without a separate power meter
 

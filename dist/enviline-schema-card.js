@@ -26,6 +26,14 @@ const C = {
   idle: "#b0bec5",
 };
 
+// Saturation pressure fits ln(p / bar abs) = A - B / (T + C), T in °C,
+// fitted to refrigerant tables from -30 to 60 °C (error below 0.5 %).
+const REFRIGERANTS = {
+  R410A: [10.5455, 2248.41, 265.5],
+  R32: [10.6461, 2274.77, 266.0],
+  R290: [9.6478, 2140.6, 264.5],
+};
+
 // key: [domain, EMS-ESP suffix used for auto-detection]
 const ENTITY_DEFS = {
   outdoortemp: ["sensor", "outdoortemp"],
@@ -88,6 +96,8 @@ const I18N = {
     dhw: "Warm water",
     cop_calc: "COP (berekend uit warmte en elektrisch vermogen)",
     legend_p: "PL1 / PH1 = druksensor, omgerekend naar verzadigingstemperatuur",
+    legend_p_ref: "PL1 / PH1 = druksensor: bar (abs., {r}) en verzadigingstemp.",
+    pressure_note: "Druk absoluut, berekend uit de verzadigingstemperatuur voor {r}",
     legend_t: "TR5 / TR6 = gemeten gastemperatuur · Overv. = TR − P",
     d: {
       outdoortemp: ["Buiten ", "Buitentemperatuur (sensor warmtepomp)"],
@@ -150,6 +160,8 @@ const I18N = {
     dhw: "Hot water",
     cop_calc: "COP (calculated from heat output and electrical power)",
     legend_p: "PL1 / PH1 = pressure sensor, shown as saturation temperature",
+    legend_p_ref: "PL1 / PH1 = pressure sensor: bar (abs., {r}) and saturation temp.",
+    pressure_note: "Absolute pressure, calculated from the saturation temperature for {r}",
     legend_t: "TR5 / TR6 = measured gas temperature · SH = TR − P",
     d: {
       outdoortemp: ["Outdoor ", "Outdoor temperature (heat pump sensor)"],
@@ -204,12 +216,12 @@ const LABELS = [
   ["hptl2", 80, 125, false, C.air],
   ["hpta4", 80, 505, false, C.air],
   ["hpea0", 80, 527, false, C.amber],
-  ["hppl1", 150, 195, false, C.suction],
-  ["hptr5", 150, 217, false, C.suction],
-  ["superheat_suction", 150, 239, false, C.suction],
+  ["hppl1", 150, 204, false, C.suction],
+  ["hptr5", 150, 233, false, C.suction],
+  ["superheat_suction", 150, 255, false, C.suction],
   ["hpph1", 330, 150, false, C.discharge],
-  ["hptr6", 330, 172, false, C.discharge],
-  ["superheat_discharge", 330, 194, false, C.discharge],
+  ["hptr6", 330, 178, false, C.discharge],
+  ["superheat_discharge", 330, 198, false, C.discharge],
   ["hpcompspd", 240, 297, true, C.amber],
   ["hptr1", 240, 321, false, C.neutral],
   ["electric_power", 258, 384, true, C.amber],
@@ -255,7 +267,7 @@ const ARROWS = [
 const arrowSvg = ([id, x, y, a, col]) =>
   `<polygon id="${id}" class="arrow" points="7,0 -6,-7 -6,7" fill="${col}" transform="translate(${x} ${y}) rotate(${a})"/>`;
 
-function buildSvg(t) {
+function buildSvg(t, ref) {
   return `
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="${VB_X} ${VB_Y} ${VB_W} ${VB_H}" font-family="sans-serif">
   <defs>
@@ -362,7 +374,7 @@ function buildSvg(t) {
     <polygon id="pump_pc1" class="pump" points="10,0 -7,-10 -7,10" transform="translate(920 215)"/>
   </g>
   <g class="dot">
-    <line x1="170" y1="195" x2="200" y2="195" stroke="#4fc3f7"/><circle cx="200" cy="195" r="3.5" fill="#4fc3f7"/>
+    <line x1="170" y1="204" x2="200" y2="204" stroke="#4fc3f7"/><circle cx="200" cy="204" r="3.5" fill="#4fc3f7"/>
     <line x1="305" y1="150" x2="280" y2="150" stroke="#ff7043"/><circle cx="280" cy="150" r="3.5" fill="#ff7043"/>
     <line x1="320" y1="519" x2="320" y2="500" stroke="#ffb74d"/><circle cx="320" cy="500" r="3.5" fill="#ffb74d"/>
     <line x1="180" y1="519" x2="180" y2="500" stroke="#ffb74d"/><circle cx="180" cy="500" r="3.5" fill="#ffb74d"/>
@@ -372,7 +384,7 @@ function buildSvg(t) {
     <line x1="700" y1="131" x2="768" y2="215" stroke="#e53935"/><circle cx="768" cy="215" r="3.5" fill="#e53935"/>
   </g>
   <g class="txt" font-size="11" text-anchor="middle">
-    <text x="300" y="559">${t.legend_p}</text>
+    <text x="300" y="559">${ref ? t.legend_p_ref.replace("{r}", ref) : t.legend_p}</text>
     <text x="300" y="573">${t.legend_t}</text>
   </g>
   ${ARROWS.map(arrowSvg).join("\n  ")}
@@ -401,6 +413,7 @@ const STYLE = `
   }
   .lbl.p { font-size: clamp(11px, 1.45cqw, 24px); font-weight: 600; color: var(--primary-text-color); padding: 0.05em 0.55em; }
   .lbl.b { font-weight: 600; color: var(--primary-text-color); }
+  .lbl.two { white-space: pre; text-align: center; border-radius: 0.7em; }
   .lbl[hidden] { display: none; }
   .comp {
     position: absolute; transform: translate(-50%, -50%); line-height: 0; cursor: pointer;
@@ -483,6 +496,11 @@ class EnvilineSchemaCard extends HTMLElement {
     return Number.isFinite(v) ? v : undefined;
   }
 
+  _refrigerant() {
+    const ref = String(this._config.refrigerant || "").toUpperCase();
+    return REFRIGERANTS[ref] ? ref : undefined;
+  }
+
   _fmt1(v) {
     const lang = this._hass.locale?.language || this._hass.language || "en";
     return new Intl.NumberFormat(lang, { minimumFractionDigits: 1, maximumFractionDigits: 1 }).format(v);
@@ -507,7 +525,7 @@ class EnvilineSchemaCard extends HTMLElement {
       <style>${STYLE}</style>
       <ha-card class="${this._config.transparent ? "bare" : ""}">
         <div class="wrap">
-          ${buildSvg(t)}
+          ${buildSvg(t, this._refrigerant())}
           ${labels}
           <div class="comp" data-key="hpcompspd" style="left:${pctX(240)}%;top:${pctY(240)}%"><ha-icon icon="mdi:heat-pump"></ha-icon></div>
         </div>
@@ -539,6 +557,13 @@ class EnvilineSchemaCard extends HTMLElement {
       const so = this._stateObj(key);
       if (so) {
         text = prefix + this._format(so);
+        const ref = this._refrigerant();
+        const sat = this._num(key);
+        if (ref && (key === "hppl1" || key === "hpph1") && sat !== undefined) {
+          const [a, b, c] = REFRIGERANTS[ref];
+          text = `${prefix}${this._fmt1(Math.exp(a - b / (sat + c)))} bar\n${this._format(so)}`;
+          title = `${desc}. ${t.pressure_note.replace("{r}", ref)}\n${t.history}`;
+        }
       } else if (key === "cop") {
         const heat = this._num("hppower");
         const elec = this._num("electric_power");
@@ -563,6 +588,7 @@ class EnvilineSchemaCard extends HTMLElement {
       const show = text !== undefined && !hide.includes(key);
       el.hidden = !show;
       if (show) {
+        el.classList.toggle("two", text.includes("\n"));
         if (el.textContent !== text) el.textContent = text;
         if (el.title !== title) el.title = title;
       }
@@ -626,8 +652,8 @@ const EDITOR_GROUPS = [
   ["room", ["currtemp", "seltemp", "dampedoutdoortemp"]],
 ];
 const GROUP_TITLES = {
-  nl: { refrigerant: "Koudemiddel en compressor", outdoor: "Buitenunit", water: "Watercircuit", dhw: "Warm water", power: "Vermogen", room: "Thermostaat", auto: "EMS-ESP-entiteiten automatisch zoeken", transparent: "Transparante achtergrond", language: "Taal (leeg = HA-taal)" },
-  en: { refrigerant: "Refrigerant and compressor", outdoor: "Outdoor unit", water: "Water circuit", dhw: "Hot water", power: "Power", room: "Thermostat", auto: "Auto-detect EMS-ESP entities", transparent: "Transparent background", language: "Language (empty = HA language)" },
+  nl: { refrigerant: "Koudemiddel en compressor", outdoor: "Buitenunit", water: "Watercircuit", dhw: "Warm water", power: "Vermogen", room: "Thermostaat", auto: "EMS-ESP-entiteiten automatisch zoeken", transparent: "Transparante achtergrond", language: "Taal (leeg = HA-taal)", refrigerant: "Koudemiddel (voor druk in bar, zie typeplaatje)" },
+  en: { refrigerant: "Refrigerant and compressor", outdoor: "Outdoor unit", water: "Water circuit", dhw: "Hot water", power: "Power", room: "Thermostat", auto: "Auto-detect EMS-ESP entities", transparent: "Transparent background", language: "Language (empty = HA language)", refrigerant: "Refrigerant (for pressure in bar, see type plate)" },
 };
 
 class EnvilineSchemaCardEditor extends HTMLElement {
@@ -655,6 +681,7 @@ class EnvilineSchemaCardEditor extends HTMLElement {
         for (const [k, v] of Object.entries(config.entities || {})) if (v) entities[k] = v;
         config.entities = entities;
         if (!config.language) delete config.language;
+        if (!config.refrigerant) delete config.refrigerant;
         this.dispatchEvent(new CustomEvent("config-changed", { bubbles: true, composed: true, detail: { config } }));
       });
       this.appendChild(this._form);
@@ -664,6 +691,7 @@ class EnvilineSchemaCardEditor extends HTMLElement {
     this._form.schema = [
       { name: "auto_detect", selector: { boolean: {} } },
       { name: "transparent", selector: { boolean: {} } },
+      { name: "refrigerant", selector: { select: { mode: "dropdown", options: Object.keys(REFRIGERANTS) } } },
       { name: "language", selector: { select: { mode: "dropdown", options: [{ value: "nl", label: "Nederlands" }, { value: "en", label: "English" }] } } },
       ...EDITOR_GROUPS.map(([group, keys]) => ({
         type: "expandable",
@@ -676,6 +704,7 @@ class EnvilineSchemaCardEditor extends HTMLElement {
       if (s.name === "auto_detect") return g.auto;
       if (s.name === "transparent") return g.transparent;
       if (s.name === "language") return g.language;
+      if (s.name === "refrigerant") return g.refrigerant;
       const def = d[s.name];
       if (!def) return s.name;
       const found = this._config.entities?.[s.name] ? "" : autoDetect(this._hass, s.name);
