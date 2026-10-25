@@ -1,0 +1,35 @@
+name: Release
+
+# Creates a GitHub release (and tag) for the version in CARD_VERSION
+# whenever that version is new on main, so HACS shows version numbers.
+on:
+  push:
+    branches: [main]
+    paths: [dist/enviline-schema-card.js]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Read version
+        id: version
+        run: |
+          v=$(sed -n 's/^const CARD_VERSION = "\(.*\)";/\1/p' dist/enviline-schema-card.js)
+          test -n "$v"
+          echo "tag=v$v" >> "$GITHUB_OUTPUT"
+      - name: Create release if the version is new
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ steps.version.outputs.tag }}
+        run: |
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            echo "$TAG already released"
+            exit 0
+          fi
+          gh release create "$TAG" dist/enviline-schema-card.js \
+            --target "$GITHUB_SHA" --title "$TAG" --generate-notes
