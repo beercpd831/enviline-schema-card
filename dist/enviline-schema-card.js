@@ -4,11 +4,11 @@
  * heat pump read through EMS-ESP. Entities are auto-detected from the
  * EMS-ESP names and can be overridden per item in the card config.
  */
-const CARD_VERSION = "0.3.0";
+const CARD_VERSION = "0.4.0";
 
-// SVG coordinate system (viewBox 0 -25 1060 690). Label positions are given
+// SVG coordinate system (viewBox 0 -25 1060 770). Label positions are given
 // in SVG units and converted to percentages of the card.
-const VB_X = 0, VB_Y = -25, VB_W = 1060, VB_H = 690;
+const VB_X = 0, VB_Y = -25, VB_W = 1060, VB_H = 770;
 const pctX = (x) => ((x - VB_X) / VB_W) * 100;
 const pctY = (y) => ((y - VB_Y) / VB_H) * 100;
 
@@ -214,31 +214,31 @@ const LABELS = [
   ["hpmode", 240, 128, true, C.amber],
   ["hpactivity", 370, 95, true, C.amber],
   ["hptl2", 80, 125, false, C.air],
-  ["hpta4", 80, 505, false, C.air],
-  ["hpea0", 80, 527, false, C.amber],
-  ["hppl1", 150, 204, false, C.suction],
-  ["hptr5", 150, 233, false, C.suction],
-  ["superheat_suction", 150, 255, false, C.suction],
-  ["hpph1", 330, 150, false, C.discharge],
-  ["hptr6", 330, 178, false, C.discharge],
-  ["superheat_discharge", 330, 198, false, C.discharge],
-  ["hpcompspd", 240, 297, true, C.amber],
-  ["hptr1", 240, 321, false, C.neutral],
-  ["electric_power", 258, 384, true, C.amber],
-  ["hppower", 258, 409, true, C.amber],
-  ["cop", 258, 434, true, C.amber],
-  ["scop", 258, 459, true, C.amber],
-  ["hptr3", 320, 527, false, C.liquid],
-  ["hptr4", 180, 527, false, C.liquid],
-  ["hptc3", 435, 182, true, C.flow],
-  ["hptc1", 585, 150, true, C.flow],
-  ["hptc0", 588, 530, true, C.ret],
-  ["auxheaterstatus", 580, 255, false, C.neutral],
-  ["wwcurtemp", 610, 330, false, C.floor, true],
-  ["hptw1", 610, 380, false, C.floor],
-  ["hpcircspd", 680, 530, false, C.ret],
-  ["vc0valve", 750, 455, false, C.neutral],
-  ["headertemp", 865, 475, true, C.neutral],
+  ["hpta4", 80, 585, false, C.air],
+  ["hpea0", 80, 607, false, C.amber],
+  ["hppl1", 155, 215, false, C.suction],
+  ["hptr5", 155, 250, false, C.suction],
+  ["superheat_suction", 155, 275, false, C.suction],
+  ["hpph1", 328, 182, false, C.discharge],
+  ["hptr6", 328, 217, false, C.discharge],
+  ["superheat_discharge", 328, 242, false, C.discharge],
+  ["hpcompspd", 240, 377, true, C.amber],
+  ["hptr1", 240, 401, false, C.neutral],
+  ["electric_power", 258, 464, true, C.amber],
+  ["hppower", 258, 489, true, C.amber],
+  ["cop", 258, 514, true, C.amber],
+  ["scop", 258, 539, true, C.amber],
+  ["hptr3", 320, 607, false, C.liquid],
+  ["hptr4", 180, 607, false, C.liquid],
+  ["hptc3", 435, 262, true, C.flow],
+  ["hptc1", 585, 230, true, C.flow],
+  ["hptc0", 588, 610, true, C.ret],
+  ["auxheaterstatus", 580, 335, false, C.neutral],
+  ["wwcurtemp", 610, 410, false, C.floor, true],
+  ["hptw1", 610, 460, false, C.floor],
+  ["hpcircspd", 680, 610, false, C.ret],
+  ["vc0valve", 750, 535, false, C.neutral],
+  ["headertemp", 865, 555, true, C.neutral],
   ["curflowtemp", 700, 123, true, C.flow],
   ["targetflowtemp", 700, 98, true, C.discharge],
   ["currtemp", 920, 82, true, C.room],
@@ -252,16 +252,16 @@ const ARROWS = [
   ["r_dis_h", 335, 128, 0, C.discharge],
   ["r_suc_c", 168, 128, 180, C.discharge],
   ["r_dis_c", 335, 128, 180, C.suction],
-  ["r_liq1_h", 345, 500, 180, C.liquid],
-  ["r_liq2_h", 155, 500, 180, C.liquid],
-  ["r_liq1_c", 345, 500, 0, C.liquid],
-  ["r_liq2_c", 155, 500, 0, C.liquid],
-  ["w_flow", 652, 215, 0, C.flow],
-  ["w_ch", 728, 215, 0, C.flow],
-  ["w_dhw", 690, 262, 90, C.flow],
-  ["w_buf", 800, 215, 0, C.flow],
-  ["w_ret", 778, 495, 180, C.ret],
-  ["w_byp", 750, 400, 90, C.flow],
+  ["r_liq1_h", 345, 580, 180, C.liquid],
+  ["r_liq2_h", 155, 580, 180, C.liquid],
+  ["r_liq1_c", 345, 580, 0, C.liquid],
+  ["r_liq2_c", 155, 580, 0, C.liquid],
+  ["w_flow", 652, 295, 0, C.flow],
+  ["w_ch", 728, 295, 0, C.flow],
+  ["w_dhw", 690, 342, 90, C.flow],
+  ["w_buf", 800, 295, 0, C.flow],
+  ["w_ret", 778, 575, 180, C.ret],
+  ["w_byp", 750, 480, 90, C.flow],
 ];
 
 const arrowSvg = ([id, x, y, a, col]) =>
@@ -275,117 +275,119 @@ function buildSvg(t, ref) {
       <path d="M0 0 L10 5 L0 10 z" fill="#9e9e9e"/>
     </marker>
   </defs>
-  <rect x="20" y="60" width="480" height="520" rx="16" fill="#9e9e9e" fill-opacity="0.07" stroke="#9e9e9e" stroke-opacity="0.5" stroke-width="2"/>
-  <rect x="530" y="60" width="250" height="520" rx="16" fill="#9e9e9e" fill-opacity="0.07" stroke="#9e9e9e" stroke-opacity="0.5" stroke-width="2"/>
-  <rect x="800" y="60" width="240" height="520" rx="16" fill="#9e9e9e" fill-opacity="0.07" stroke="#9e9e9e" stroke-opacity="0.5" stroke-width="2" stroke-dasharray="6 6"/>
+  <rect x="20" y="60" width="480" height="600" rx="16" fill="#9e9e9e" fill-opacity="0.07" stroke="#9e9e9e" stroke-opacity="0.5" stroke-width="2"/>
+  <rect x="530" y="60" width="250" height="600" rx="16" fill="#9e9e9e" fill-opacity="0.07" stroke="#9e9e9e" stroke-opacity="0.5" stroke-width="2"/>
+  <rect x="800" y="60" width="240" height="600" rx="16" fill="#9e9e9e" fill-opacity="0.07" stroke="#9e9e9e" stroke-opacity="0.5" stroke-width="2" stroke-dasharray="6 6"/>
   <g class="txt" font-size="15" font-weight="bold">
     <text x="36" y="44">${t.outdoor_unit}</text>
     <text x="538" y="44">${t.tower}</text>
     <text x="808" y="44">${t.house}</text>
   </g>
   <g stroke="#9e9e9e" stroke-width="2" marker-end="url(#ah)">
-    <line x1="24" y1="230" x2="46" y2="230"/><line x1="24" y1="300" x2="46" y2="300"/><line x1="24" y1="370" x2="46" y2="370"/>
+    <line x1="24" y1="260" x2="46" y2="260"/><line x1="24" y1="350" x2="46" y2="350"/><line x1="24" y1="440" x2="46" y2="440"/>
   </g>
-  <rect x="50" y="170" width="60" height="280" rx="4" fill="#4fc3f7" fill-opacity="0.15" stroke="#4fc3f7" stroke-width="2"/>
+  <rect x="50" y="170" width="60" height="360" rx="4" fill="#4fc3f7" fill-opacity="0.15" stroke="#4fc3f7" stroke-width="2"/>
   <g stroke="#4fc3f7" stroke-opacity="0.6" stroke-width="1.5">
     <line x1="50" y1="200" x2="110" y2="200"/><line x1="50" y1="230" x2="110" y2="230"/>
     <line x1="50" y1="260" x2="110" y2="260"/><line x1="50" y1="290" x2="110" y2="290"/>
     <line x1="50" y1="320" x2="110" y2="320"/><line x1="50" y1="350" x2="110" y2="350"/>
     <line x1="50" y1="380" x2="110" y2="380"/><line x1="50" y1="410" x2="110" y2="410"/>
+    <line x1="50" y1="440" x2="110" y2="440"/><line x1="50" y1="470" x2="110" y2="470"/>
+    <line x1="50" y1="500" x2="110" y2="500"/>
   </g>
   <g class="txt" font-size="12" text-anchor="middle">
     <text x="80" y="162">${t.evaporator}</text>
-    <text x="80" y="552">${t.drain_pan}</text>
+    <text x="80" y="632">${t.drain_pan}</text>
     <text x="240" y="104">${t.fourway}</text>
-    <text x="312" y="270">${t.compressor}</text>
-    <text x="240" y="464">${t.eev}</text>
-    <text x="375" y="320" transform="rotate(-90 375 320)">${t.condenser}</text>
-    <text x="845" y="172">${t.buffer}</text>
-    <text x="594" y="184">${t.backup}</text>
-    <text x="690" y="183">${t.threeway}</text>
-    <text x="600" y="282">${t.dhw}</text>
-    <text x="950" y="445" font-size="13">${t.floor}</text>
+    <text x="312" y="350">${t.compressor}</text>
+    <text x="240" y="544">${t.eev}</text>
+    <text x="375" y="400" transform="rotate(-90 375 400)">${t.condenser}</text>
+    <text x="845" y="252">${t.buffer}</text>
+    <text x="594" y="264">${t.backup}</text>
+    <text x="690" y="263">${t.threeway}</text>
+    <text x="600" y="362">${t.dhw}</text>
+    <text x="950" y="525" font-size="13">${t.floor}</text>
   </g>
   <path id="fw_a" d="M185 128 H150 V180 H110" fill="none" stroke="${C.idle}" stroke-width="4"/>
-  <path id="fw_b" d="M295 128 H375 V210" fill="none" stroke="${C.idle}" stroke-width="4"/>
-  <path d="M200 145 V240 H205" fill="none" stroke="#4fc3f7" stroke-width="4"/>
-  <path d="M275 240 H280 V145" fill="none" stroke="#ff7043" stroke-width="4"/>
-  <path d="M375 430 V500 H262" fill="none" stroke="#ffb74d" stroke-width="4"/>
-  <path d="M218 500 H132 V440 H110" fill="none" stroke="#ffb74d" stroke-width="4"/>
-  <path d="M38 458 L46 484 H114 L122 458" fill="#4fc3f7" fill-opacity="0.12" stroke="#9e9e9e" stroke-width="2" stroke-linejoin="round"/>
-  <path d="M52 476 l5 -7 l5 7 l5 -7 l5 7 l5 -7 l5 7 l5 -7 l5 7 l5 -7 l5 7 l5 -7 l5 7" fill="none" stroke="#ffca28" stroke-width="2"/>
+  <path id="fw_b" d="M295 128 H375 V290" fill="none" stroke="${C.idle}" stroke-width="4"/>
+  <path d="M200 145 V320 H205" fill="none" stroke="#4fc3f7" stroke-width="4"/>
+  <path d="M275 320 H280 V145" fill="none" stroke="#ff7043" stroke-width="4"/>
+  <path d="M375 510 V580 H262" fill="none" stroke="#ffb74d" stroke-width="4"/>
+  <path d="M218 580 H132 V520 H110" fill="none" stroke="#ffb74d" stroke-width="4"/>
+  <path d="M38 538 L46 564 H114 L122 538" fill="#4fc3f7" fill-opacity="0.12" stroke="#9e9e9e" stroke-width="2" stroke-linejoin="round"/>
+  <path d="M52 556 l5 -7 l5 7 l5 -7 l5 7 l5 -7 l5 7 l5 -7 l5 7 l5 -7 l5 7 l5 -7 l5 7" fill="none" stroke="#ffca28" stroke-width="2"/>
   <rect x="185" y="111" width="110" height="34" rx="5" fill="#9e9e9e" fill-opacity="0.15" stroke="#9e9e9e" stroke-width="2"/>
   <g class="click" data-key="hpcompspd">
-    <circle cx="240" cy="240" r="35" fill="#9e9e9e" fill-opacity="0.12" stroke="#9e9e9e" stroke-width="3"/>
-    <path d="M211 220 L268 231 M211 260 L268 249" fill="none" stroke="#9e9e9e" stroke-width="2.5"/>
+    <circle cx="240" cy="320" r="35" fill="#9e9e9e" fill-opacity="0.12" stroke="#9e9e9e" stroke-width="3"/>
+    <path d="M211 300 L268 311 M211 340 L268 329" fill="none" stroke="#9e9e9e" stroke-width="2.5"/>
   </g>
-  <path d="M220 490 L240 500 L220 510 Z M260 490 L240 500 L260 510 Z" fill="none" stroke="#9e9e9e" stroke-width="1.8" stroke-linejoin="round"/>
-  <line x1="224" y1="516" x2="254" y2="486" stroke="#9e9e9e" stroke-width="1.6"/>
-  <path d="M258 482 L249 485 L255 491 Z" fill="#9e9e9e"/>
-  <line x1="240" y1="500" x2="240" y2="488" stroke="#9e9e9e" stroke-width="1.6"/>
-  <rect x="232" y="472" width="16" height="16" rx="2" fill="none" stroke="#9e9e9e" stroke-width="1.6"/>
-  <text x="240" y="484.5" fill="#9e9e9e" font-size="11" font-weight="bold" text-anchor="middle">M</text>
-  <rect x="350" y="210" width="50" height="220" rx="4" fill="#ff7043" fill-opacity="0.12" stroke="#ff7043" stroke-width="2"/>
+  <path d="M220 570 L240 580 L220 590 ZM260 570 L240 580 L260 590 Z" fill="none" stroke="#9e9e9e" stroke-width="1.8" stroke-linejoin="round"/>
+  <line x1="224" y1="596" x2="254" y2="566" stroke="#9e9e9e" stroke-width="1.6"/>
+  <path d="M258 562 L249 565 L255 571 Z" fill="#9e9e9e"/>
+  <line x1="240" y1="580" x2="240" y2="568" stroke="#9e9e9e" stroke-width="1.6"/>
+  <rect x="232" y="552" width="16" height="16" rx="2" fill="none" stroke="#9e9e9e" stroke-width="1.6"/>
+  <text x="240" y="564.5" fill="#9e9e9e" font-size="11" font-weight="bold" text-anchor="middle">M</text>
+  <rect x="350" y="290" width="50" height="220" rx="4" fill="#ff7043" fill-opacity="0.12" stroke="#ff7043" stroke-width="2"/>
   <g stroke="#ff7043" stroke-opacity="0.5" stroke-width="1.5">
-    <line x1="350" y1="240" x2="400" y2="260"/><line x1="350" y1="280" x2="400" y2="300"/>
     <line x1="350" y1="320" x2="400" y2="340"/><line x1="350" y1="360" x2="400" y2="380"/>
-    <line x1="350" y1="395" x2="400" y2="415"/>
+    <line x1="350" y1="400" x2="400" y2="420"/><line x1="350" y1="440" x2="400" y2="460"/>
+    <line x1="350" y1="475" x2="400" y2="495"/>
   </g>
-  <path d="M400 215 H558" fill="none" stroke="#e53935" stroke-width="5"/>
-  <path d="M602 215 H674" fill="none" stroke="#e53935" stroke-width="5"/>
-  <path d="M706 215 H820" fill="none" stroke="#e53935" stroke-width="5"/>
-  <path d="M690 231 V290" fill="none" stroke="#e53935" stroke-width="5"/>
-  <path d="M870 215 H904" fill="none" stroke="#e57373" stroke-width="4"/>
-  <path d="M936 215 H1010 V245 H895 V275 H1010 V305 H895 V335 H1010 V365 H895 V395 H1010 V420 H870" fill="none" stroke="#e57373" stroke-width="4" stroke-linejoin="round"/>
-  <path d="M820 420 H792 V495 H766" fill="none" stroke="#1e88e5" stroke-width="5"/>
-  <path d="M734 495 H686" fill="none" stroke="#1e88e5" stroke-width="5"/>
-  <path d="M654 495 H515 V405 H400" fill="none" stroke="#1e88e5" stroke-width="5"/>
-  <rect x="820" y="180" width="50" height="260" rx="22" fill="#9e9e9e" fill-opacity="0.15" stroke="#9e9e9e" stroke-width="2"/>
-  <rect x="822" y="182" width="46" height="120" rx="20" fill="#e53935" fill-opacity="0.15"/>
-  <rect x="822" y="320" width="46" height="118" rx="20" fill="#1e88e5" fill-opacity="0.15"/>
-  <path d="M690 470 V495" fill="none" stroke="#1e88e5" stroke-width="5"/>
-  <path d="M750 215 V479" fill="none" stroke="#e53935" stroke-width="3" stroke-dasharray="7 4"/>
+  <path d="M400 295 H558" fill="none" stroke="#e53935" stroke-width="5"/>
+  <path d="M602 295 H674" fill="none" stroke="#e53935" stroke-width="5"/>
+  <path d="M706 295 H820" fill="none" stroke="#e53935" stroke-width="5"/>
+  <path d="M690 311 V370" fill="none" stroke="#e53935" stroke-width="5"/>
+  <path d="M870 295 H904" fill="none" stroke="#e57373" stroke-width="4"/>
+  <path d="M936 295 H1010 V325 H895 V355 H1010 V385 H895 V415 H1010 V445 H895 V475 H1010 V500 H870" fill="none" stroke="#e57373" stroke-width="4" stroke-linejoin="round"/>
+  <path d="M820 500 H792 V575 H766" fill="none" stroke="#1e88e5" stroke-width="5"/>
+  <path d="M734 575 H686" fill="none" stroke="#1e88e5" stroke-width="5"/>
+  <path d="M654 575 H515 V485 H400" fill="none" stroke="#1e88e5" stroke-width="5"/>
+  <rect x="820" y="260" width="50" height="260" rx="22" fill="#9e9e9e" fill-opacity="0.15" stroke="#9e9e9e" stroke-width="2"/>
+  <rect x="822" y="262" width="46" height="120" rx="20" fill="#e53935" fill-opacity="0.15"/>
+  <rect x="822" y="400" width="46" height="118" rx="20" fill="#1e88e5" fill-opacity="0.15"/>
+  <path d="M690 550 V575" fill="none" stroke="#1e88e5" stroke-width="5"/>
+  <path d="M750 295 V559" fill="none" stroke="#e53935" stroke-width="3" stroke-dasharray="7 4"/>
   <g class="click" data-key="vc0valve">
     <g fill="none" stroke="#9e9e9e" stroke-width="1.8" stroke-linejoin="round">
-      <path class="port open" d="M734 485 L750 495 L734 505 Z"/>
-      <path id="vc0_ab" class="port" d="M766 485 L750 495 L766 505 Z"/>
-      <path id="vc0_byp" class="port" d="M740 479 L750 495 L760 479 Z"/>
+      <path class="port open" d="M734 565 L750 575 L734 585 Z"/>
+      <path id="vc0_ab" class="port" d="M766 565 L750 575 L766 585 Z"/>
+      <path id="vc0_byp" class="port" d="M740 559 L750 575 L760 559 Z"/>
     </g>
-    <line x1="750" y1="495" x2="750" y2="507" stroke="#9e9e9e" stroke-width="1.8"/><circle cx="750" cy="513" r="6" fill="none" stroke="#9e9e9e" stroke-width="1.8"/>
+    <line x1="750" y1="575" x2="750" y2="587" stroke="#9e9e9e" stroke-width="1.8"/><circle cx="750" cy="593" r="6" fill="none" stroke="#9e9e9e" stroke-width="1.8"/>
   </g>
-  <path d="M558 215 L580 193 L602 215 L580 237 Z" fill="#ffca28" fill-opacity="0.25" stroke="#ffca28" stroke-width="2" stroke-linejoin="round"/>
-  <g fill="#ffca28"><path d="M574 199 L586 199 L580 209 Z"/><path d="M574 231 L586 231 L580 221 Z"/></g>
+  <path d="M558 295 L580 273 L602 295 L580 317 Z" fill="#ffca28" fill-opacity="0.25" stroke="#ffca28" stroke-width="2" stroke-linejoin="round"/>
+  <g fill="#ffca28"><path d="M574 279 L586 279 L580 289 Z"/><path d="M574 311 L586 311 L580 301 Z"/></g>
   <g class="click" data-key="ww3wayvalve">
     <g fill="none" stroke="#9e9e9e" stroke-width="1.8" stroke-linejoin="round">
-      <path class="port open" d="M674 205 L690 215 L674 225 Z"/>
-      <path id="w3_ch" class="port" d="M706 205 L690 215 L706 225 Z"/>
-      <path id="w3_dhw" class="port" d="M680 231 L690 215 L700 231 Z"/>
+      <path class="port open" d="M674 285 L690 295 L674 305 Z"/>
+      <path id="w3_ch" class="port" d="M706 285 L690 295 L706 305 Z"/>
+      <path id="w3_dhw" class="port" d="M680 311 L690 295 L700 311 Z"/>
     </g>
-    <line x1="690" y1="215" x2="690" y2="203" stroke="#9e9e9e" stroke-width="1.8"/><circle cx="690" cy="197" r="6" fill="none" stroke="#9e9e9e" stroke-width="1.8"/>
+    <line x1="690" y1="295" x2="690" y2="283" stroke="#9e9e9e" stroke-width="1.8"/><circle cx="690" cy="277" r="6" fill="none" stroke="#9e9e9e" stroke-width="1.8"/>
   </g>
-  <rect x="560" y="290" width="160" height="180" rx="30" fill="#e53935" fill-opacity="0.08" stroke="#9e9e9e" stroke-width="2"/>
-  <path d="M690 290 V315 L660 327 L700 339 L660 351 L700 363 L660 375 L700 387 L660 399 L700 411 L660 423 L700 435 L690 445 V470" fill="none" stroke="#e57373" stroke-width="3" stroke-linejoin="round"/>
+  <rect x="560" y="370" width="160" height="180" rx="30" fill="#e53935" fill-opacity="0.08" stroke="#9e9e9e" stroke-width="2"/>
+  <path d="M690 370 V395 L660 407 L700 419 L660 431 L700 443 L660 455 L700 467 L660 479 L700 491 L660 503 L700 515 L690 525 V550" fill="none" stroke="#e57373" stroke-width="3" stroke-linejoin="round"/>
   <g class="click" data-key="heatingpump">
-    <circle cx="670" cy="495" r="16" fill="#1e88e5" fill-opacity="0.2" stroke="#1e88e5" stroke-width="2"/>
-    <polygon id="pump_hp" class="pump" points="10,0 -7,-10 -7,10" transform="translate(670 495) rotate(180)"/>
+    <circle cx="670" cy="575" r="16" fill="#1e88e5" fill-opacity="0.2" stroke="#1e88e5" stroke-width="2"/>
+    <polygon id="pump_hp" class="pump" points="10,0 -7,-10 -7,10" transform="translate(670 575) rotate(180)"/>
   </g>
   <g class="click" data-key="pc1on">
-    <circle cx="920" cy="215" r="16" fill="#e53935" fill-opacity="0.2" stroke="#e53935" stroke-width="2"/>
-    <polygon id="pump_pc1" class="pump" points="10,0 -7,-10 -7,10" transform="translate(920 215)"/>
+    <circle cx="920" cy="295" r="16" fill="#e53935" fill-opacity="0.2" stroke="#e53935" stroke-width="2"/>
+    <polygon id="pump_pc1" class="pump" points="10,0 -7,-10 -7,10" transform="translate(920 295)"/>
   </g>
   <g class="dot">
-    <line x1="170" y1="204" x2="200" y2="204" stroke="#4fc3f7"/><circle cx="200" cy="204" r="3.5" fill="#4fc3f7"/>
-    <line x1="305" y1="150" x2="280" y2="150" stroke="#ff7043"/><circle cx="280" cy="150" r="3.5" fill="#ff7043"/>
-    <line x1="320" y1="519" x2="320" y2="500" stroke="#ffb74d"/><circle cx="320" cy="500" r="3.5" fill="#ffb74d"/>
-    <line x1="180" y1="519" x2="180" y2="500" stroke="#ffb74d"/><circle cx="180" cy="500" r="3.5" fill="#ffb74d"/>
-    <line x1="435" y1="190" x2="435" y2="215" stroke="#e53935"/><circle cx="435" cy="215" r="3.5" fill="#e53935"/>
-    <line x1="544" y1="162" x2="544" y2="215" stroke="#e53935"/><circle cx="544" cy="215" r="3.5" fill="#e53935"/>
-    <line x1="588" y1="510" x2="588" y2="495" stroke="#1e88e5"/><circle cx="588" cy="495" r="3.5" fill="#1e88e5"/>
-    <line x1="700" y1="131" x2="768" y2="215" stroke="#e53935"/><circle cx="768" cy="215" r="3.5" fill="#e53935"/>
+    <line x1="185" y1="215" x2="200" y2="215" stroke="#4fc3f7"/><circle cx="200" cy="215" r="3.5" fill="#4fc3f7"/>
+    <line x1="295" y1="182" x2="280" y2="182" stroke="#ff7043"/><circle cx="280" cy="182" r="3.5" fill="#ff7043"/>
+    <line x1="320" y1="599" x2="320" y2="580" stroke="#ffb74d"/><circle cx="320" cy="580" r="3.5" fill="#ffb74d"/>
+    <line x1="180" y1="599" x2="180" y2="580" stroke="#ffb74d"/><circle cx="180" cy="580" r="3.5" fill="#ffb74d"/>
+    <line x1="435" y1="270" x2="435" y2="295" stroke="#e53935"/><circle cx="435" cy="295" r="3.5" fill="#e53935"/>
+    <line x1="544" y1="242" x2="544" y2="295" stroke="#e53935"/><circle cx="544" cy="295" r="3.5" fill="#e53935"/>
+    <line x1="588" y1="590" x2="588" y2="575" stroke="#1e88e5"/><circle cx="588" cy="575" r="3.5" fill="#1e88e5"/>
+    <line x1="700" y1="131" x2="768" y2="295" stroke="#e53935"/><circle cx="768" cy="295" r="3.5" fill="#e53935"/>
   </g>
   <g class="txt" font-size="11" text-anchor="middle">
-    <text x="300" y="559">${ref ? t.legend_p_ref.replace("{r}", ref) : t.legend_p}</text>
-    <text x="300" y="573">${t.legend_t}</text>
+    <text x="300" y="639">${ref ? t.legend_p_ref.replace("{r}", ref) : t.legend_p}</text>
+    <text x="300" y="653">${t.legend_t}</text>
   </g>
   ${ARROWS.map(arrowSvg).join("\n  ")}
 </svg>`;
@@ -461,7 +463,7 @@ class EnvilineSchemaCard extends HTMLElement {
   }
 
   getCardSize() {
-    return 8;
+    return 9;
   }
 
   getGridOptions() {
@@ -527,7 +529,7 @@ class EnvilineSchemaCard extends HTMLElement {
         <div class="wrap">
           ${buildSvg(t, this._refrigerant())}
           ${labels}
-          <div class="comp" data-key="hpcompspd" style="left:${pctX(240)}%;top:${pctY(240)}%"><ha-icon icon="mdi:heat-pump"></ha-icon></div>
+          <div class="comp" data-key="hpcompspd" style="left:${pctX(240)}%;top:${pctY(320)}%"><ha-icon icon="mdi:heat-pump"></ha-icon></div>
         </div>
       </ha-card>`;
     this.shadowRoot.querySelectorAll("[data-key]").forEach((el) => {
@@ -574,7 +576,12 @@ class EnvilineSchemaCard extends HTMLElement {
           title = t.cop_calc;
         }
       }
-      if (!so && SUPERHEAT[key] && (this._num("hpcompspd") ?? 0) > 0) {
+      if (SUPERHEAT[key]) {
+        // Only meaningful while the compressor runs; never show "unavailable".
+        text = undefined;
+        if ((this._num("hpcompspd") ?? 0) > 0 && this._num(key) !== undefined) text = prefix + this._format(so);
+      }
+      if (text === undefined && SUPERHEAT[key] && (this._num("hpcompspd") ?? 0) > 0) {
         const gas = this._num(SUPERHEAT[key][0]);
         const sat = this._num(SUPERHEAT[key][1]);
         if (gas !== undefined && sat !== undefined) text = `${prefix}${this._fmt1(gas - sat)} K`;
@@ -598,7 +605,7 @@ class EnvilineSchemaCard extends HTMLElement {
     let row = 0;
     for (const key of ["electric_power", "hppower", "cop", "scop"]) {
       const el = root.querySelector(`.lbl[data-key="${key}"]`);
-      if (!el.hidden) el.style.top = `${pctY(384 + 25 * row++).toFixed(2)}%`;
+      if (!el.hidden) el.style.top = `${pctY(440 + 25 * row++).toFixed(2)}%`;
     }
 
     const running = (this._num("hpcompspd") ?? 0) > 0;
