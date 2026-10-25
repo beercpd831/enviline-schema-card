@@ -56,6 +56,7 @@ entities:
 | `hp4way` | boiler | 4-way valve VR4 (off = heating) |
 | `hppl1`, `hptr5` | boiler | Low pressure / suction gas |
 | `hpph1`, `hptr6` | boiler | High pressure / discharge gas |
+| `superheat_suction`, `superheat_discharge` | – | Optional superheat sensors; if empty the card shows TR5 − PL1 and TR6 − PH1 while the compressor runs |
 | `hptr1`, `hptr3`, `hptr4` | boiler | Compressor, liquid side, evaporator inlet |
 | `outdoortemp`, `hptl2` | boiler | Outdoor and air inlet temperature |
 | `hpta4`, `hpea0` | boiler | Drain pan temperature and heater |
@@ -77,6 +78,10 @@ entities:
 | `cop` | – | COP sensor; if empty it is calculated from `hppower` and `electric_power` while the compressor runs |
 | `nrgsupptotal`, `nrgconstotal` | boiler | Lifetime energy supplied / consumed, used for the SCOP fallback |
 | `currtemp`, `seltemp`, `dampedoutdoortemp` | thermostat | Room temperature, setpoint, damped outdoor temperature |
+
+### PL1 and PH1 are pressures
+
+EMS-ESP reports the low and high pressure sensors PL1 and PH1 as the saturation temperature that belongs to the measured pressure (evaporating and condensing temperature), not in bar. TR5 and TR6 are the real gas temperatures at the same points, so the difference is the superheat: TR5 − PL1 at the suction side (normally a few K) and TR6 − PH1 at the discharge side. The card shows both, plus a short legend under the outdoor unit.
 
 ## Without a separate power meter
 
