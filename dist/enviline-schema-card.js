@@ -4,7 +4,7 @@
  * heat pump read through EMS-ESP. Entities are auto-detected from the
  * EMS-ESP names and can be overridden per item in the card config.
  */
-const CARD_VERSION = "0.4.0";
+const CARD_VERSION = "0.5.0";
 
 // SVG coordinate system (viewBox 0 -25 1060 770). Label positions are given
 // in SVG units and converted to percentages of the card.
@@ -133,9 +133,9 @@ const I18N = {
       heatingpump: ["", "Pomp warmtepomp-circuit (primair)"],
       hpcircspd: ["Pomp ", "Snelheid circulatiepomp warmtepomp-circuit"],
       vc0valve: ["VC0 ", "VC0 - Bypassklep (aan = bypass)"],
-      curflowtemp: ["Aanvoer T0 ", "T0 - Aanvoertemperatuur (in Tower, voor buffervat)"],
+      curflowtemp: ["Buffer T0 ", "T0 - Aanvoertemperatuur, bovenin het buffervat (zelfde sensor als headertemp)"],
       targetflowtemp: ["Berekend ", "Berekende aanvoertemperatuur (stooklijn)"],
-      headertemp: ["Buffer ", "Temperatuur buffervat / open verdeler"],
+      headertemp: ["Buffer ", "Temperatuur buffervat / open verdeler (reserve voor T0, zelfde sensor)"],
       pc1on: ["", "Circulatiepomp vloerverwarming (PC1)"],
       currtemp: ["Kamer ", "Huidige kamertemperatuur"],
       seltemp: ["Setpoint ", "Thermostaat setpoint kamer"],
@@ -197,9 +197,9 @@ const I18N = {
       heatingpump: ["", "Heat pump circuit pump (primary)"],
       hpcircspd: ["Pump ", "Heat pump circuit pump speed"],
       vc0valve: ["VC0 ", "VC0 - Bypass valve (on = bypass)"],
-      curflowtemp: ["Flow T0 ", "T0 - Flow temperature (in Tower, before buffer)"],
+      curflowtemp: ["Buffer T0 ", "T0 - Flow temperature, top of the buffer tank (same sensor as headertemp)"],
       targetflowtemp: ["Target ", "Calculated flow temperature (heating curve)"],
-      headertemp: ["Buffer ", "Buffer tank / low-loss header temperature"],
+      headertemp: ["Buffer ", "Buffer tank / low-loss header temperature (fallback for T0, same sensor)"],
       pc1on: ["", "Underfloor heating pump (PC1)"],
       currtemp: ["Room ", "Current room temperature"],
       seltemp: ["Setpoint ", "Room setpoint"],
@@ -238,8 +238,7 @@ const LABELS = [
   ["hptw1", 610, 460, false, C.floor],
   ["hpcircspd", 680, 610, false, C.ret],
   ["vc0valve", 750, 535, false, C.neutral],
-  ["headertemp", 865, 555, true, C.neutral],
-  ["curflowtemp", 700, 123, true, C.flow],
+  ["curflowtemp", 885, 232, true, C.flow],
   ["targetflowtemp", 700, 98, true, C.discharge],
   ["currtemp", 920, 82, true, C.room],
   ["seltemp", 920, 107, true, C.room],
@@ -302,7 +301,7 @@ function buildSvg(t, ref) {
     <text x="312" y="350">${t.compressor}</text>
     <text x="240" y="544">${t.eev}</text>
     <text x="375" y="400" transform="rotate(-90 375 400)">${t.condenser}</text>
-    <text x="845" y="252">${t.buffer}</text>
+    <text x="845" y="540">${t.buffer}</text>
     <text x="594" y="264">${t.backup}</text>
     <text x="690" y="263">${t.threeway}</text>
     <text x="600" y="362">${t.dhw}</text>
@@ -383,7 +382,7 @@ function buildSvg(t, ref) {
     <line x1="435" y1="270" x2="435" y2="295" stroke="#e53935"/><circle cx="435" cy="295" r="3.5" fill="#e53935"/>
     <line x1="544" y1="242" x2="544" y2="295" stroke="#e53935"/><circle cx="544" cy="295" r="3.5" fill="#e53935"/>
     <line x1="588" y1="590" x2="588" y2="575" stroke="#1e88e5"/><circle cx="588" cy="575" r="3.5" fill="#1e88e5"/>
-    <line x1="700" y1="131" x2="768" y2="295" stroke="#e53935"/><circle cx="768" cy="295" r="3.5" fill="#e53935"/>
+    <line x1="845" y1="243" x2="845" y2="320" stroke="#e53935"/><circle cx="845" cy="320" r="3.5" fill="#e53935"/>
   </g>
   <g class="txt" font-size="11" text-anchor="middle">
     <text x="300" y="639">${ref ? t.legend_p_ref.replace("{r}", ref) : t.legend_p}</text>
@@ -436,7 +435,7 @@ function autoDetect(hass, key) {
 }
 
 // Labels without an entity of their own open this one's history on click.
-const FALLBACK_ENTITY = { scop: "nrgsupptotal", superheat_suction: "hptr5", superheat_discharge: "hptr6" };
+const FALLBACK_ENTITY = { scop: "nrgsupptotal", superheat_suction: "hptr5", superheat_discharge: "hptr6", curflowtemp: "headertemp" };
 
 // Calculated superheat: [gas temperature, saturation temperature from the pressure sensor]
 const SUPERHEAT = { superheat_suction: ["hptr5", "hppl1"], superheat_discharge: ["hptr6", "hpph1"] };
@@ -556,7 +555,8 @@ class EnvilineSchemaCard extends HTMLElement {
       const [prefix, desc] = t.d[key];
       let text;
       let title = `${desc}\n${t.history}`;
-      const so = this._stateObj(key);
+      // T0 and headertemp are the same sensor in the buffer tank; either one fills the label.
+      const so = this._stateObj(key) || (key === "curflowtemp" ? this._stateObj("headertemp") : undefined);
       if (so) {
         text = prefix + this._format(so);
         const ref = this._refrigerant();

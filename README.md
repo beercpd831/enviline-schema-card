@@ -65,13 +65,13 @@ entities:
 | `hptc3` | boiler | Condenser water outlet (outdoor unit) |
 | `hptc1` | boiler | Flow in Tower, before backup heater |
 | `hptc0` | boiler | Return to heat pump, after primary pump |
-| `curflowtemp` | boiler | T0 flow temperature |
+| `curflowtemp` | boiler | T0 flow temperature, top of the buffer tank |
 | `targetflowtemp` | thermostat | Calculated flow temperature |
 | `heatingpump`, `hpcircspd` | boiler | Primary pump and its speed |
 | `ww3wayvalve` | boiler | 3-way valve (on = hot water) |
 | `vc0valve` | boiler | VC0 bypass valve (on = bypass) |
 | `auxheaterstatus` | boiler | Electric backup heater |
-| `headertemp` | boiler | Buffer tank / low-loss header |
+| `headertemp` | boiler | Same sensor as T0; used for the T0 label when `curflowtemp` is missing |
 | `pc1on` | boiler | Underfloor heating pump PC1 |
 | `wwcurtemp`, `hptw1` | boiler | Hot water top / TW1 |
 | `hppower` | boiler | Heat output |
