@@ -4,7 +4,7 @@
  * heat pump read through EMS-ESP. Entities are auto-detected from the
  * EMS-ESP names and can be overridden per item in the card config.
  */
-const CARD_VERSION = "0.5.0";
+const CARD_VERSION = "0.5.1";
 
 // SVG coordinate system (viewBox 0 -25 1060 770). Label positions are given
 // in SVG units and converted to percentages of the card.
@@ -230,7 +230,7 @@ const LABELS = [
   ["scop", 258, 539, true, C.amber],
   ["hptr3", 320, 607, false, C.liquid],
   ["hptr4", 180, 607, false, C.liquid],
-  ["hptc3", 435, 262, true, C.flow],
+  ["hptc3", 435, 230, true, C.flow],
   ["hptc1", 585, 230, true, C.flow],
   ["hptc0", 588, 610, true, C.ret],
   ["auxheaterstatus", 580, 335, false, C.neutral],
@@ -239,7 +239,7 @@ const LABELS = [
   ["hpcircspd", 680, 610, false, C.ret],
   ["vc0valve", 750, 535, false, C.neutral],
   ["curflowtemp", 885, 232, true, C.flow],
-  ["targetflowtemp", 700, 98, true, C.discharge],
+  ["targetflowtemp", 885, 204, true, C.discharge],
   ["currtemp", 920, 82, true, C.room],
   ["seltemp", 920, 107, true, C.room],
   ["dampedoutdoortemp", 920, 129, false, C.air],
@@ -379,7 +379,7 @@ function buildSvg(t, ref) {
     <line x1="295" y1="182" x2="280" y2="182" stroke="#ff7043"/><circle cx="280" cy="182" r="3.5" fill="#ff7043"/>
     <line x1="320" y1="599" x2="320" y2="580" stroke="#ffb74d"/><circle cx="320" cy="580" r="3.5" fill="#ffb74d"/>
     <line x1="180" y1="599" x2="180" y2="580" stroke="#ffb74d"/><circle cx="180" cy="580" r="3.5" fill="#ffb74d"/>
-    <line x1="435" y1="270" x2="435" y2="295" stroke="#e53935"/><circle cx="435" cy="295" r="3.5" fill="#e53935"/>
+    <line x1="435" y1="238" x2="435" y2="295" stroke="#e53935"/><circle cx="435" cy="295" r="3.5" fill="#e53935"/>
     <line x1="544" y1="242" x2="544" y2="295" stroke="#e53935"/><circle cx="544" cy="295" r="3.5" fill="#e53935"/>
     <line x1="588" y1="590" x2="588" y2="575" stroke="#1e88e5"/><circle cx="588" cy="575" r="3.5" fill="#1e88e5"/>
     <line x1="845" y1="243" x2="845" y2="320" stroke="#e53935"/><circle cx="845" cy="320" r="3.5" fill="#e53935"/>
