@@ -232,7 +232,7 @@ const LABELS = [
   ["hptr4", 180, 607, false, C.liquid],
   ["hptc3", 435, 230, true, C.flow],
   ["hptc1", 585, 230, true, C.flow],
-  ["hptc0", 566, 640, true, C.ret],
+  ["hptc0", 580, 640, true, C.ret],
   ["auxheaterstatus", 580, 335, false, C.neutral],
   ["wwcurtemp", 610, 410, false, C.floor, true],
   ["hptw1", 610, 460, false, C.floor],
@@ -381,7 +381,7 @@ function buildSvg(t, ref) {
     <line x1="180" y1="599" x2="180" y2="580" stroke="#ffb74d"/><circle cx="180" cy="580" r="3.5" fill="#ffb74d"/>
     <line x1="435" y1="238" x2="435" y2="295" stroke="#e53935"/><circle cx="435" cy="295" r="3.5" fill="#e53935"/>
     <line x1="544" y1="242" x2="544" y2="295" stroke="#e53935"/><circle cx="544" cy="295" r="3.5" fill="#e53935"/>
-    <line x1="566" y1="628" x2="566" y2="600" stroke="#1e88e5"/><circle cx="566" cy="600" r="3.5" fill="#1e88e5"/>
+    <line x1="580" y1="628" x2="580" y2="600" stroke="#1e88e5"/><circle cx="580" cy="600" r="3.5" fill="#1e88e5"/>
     <line x1="845" y1="243" x2="845" y2="320" stroke="#e53935"/><circle cx="845" cy="320" r="3.5" fill="#e53935"/>
   </g>
   <g class="txt" font-size="11" text-anchor="middle">
