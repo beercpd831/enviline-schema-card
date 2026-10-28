@@ -2,7 +2,7 @@
 
 A live Lovelace diagram of a **Nefit-Bosch EnviLine Tower** heat pump (all-electric monobloc outdoor unit), read through **[EMS-ESP](https://emsesp.org)**. It shows the refrigerant circuit, the water side in the Tower (backup heater, 3-way valve, hot-water coil, primary pump, VC0 bypass valve) and the buffer tank with underfloor heating, with every sensor in place.
 
-![Dark theme, heating](docs/heat-dark.png)
+![Dark theme, heat pump heating the house](docs/heat-dark.png)
 
 What moves live:
 
@@ -15,7 +15,7 @@ What moves live:
 
 The card is drawn as inline SVG, so it follows your light or dark theme. Text is available in Dutch and English (follows the HA language by default).
 
-![Light theme, hot water](docs/dhw-off-light.png)
+![Light theme, heat pump heating hot water](docs/dhw-light.png)
 
 ## Installation
 
