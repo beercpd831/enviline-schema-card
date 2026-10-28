@@ -4,7 +4,7 @@
  * heat pump read through EMS-ESP. Entities are auto-detected from the
  * EMS-ESP names and can be overridden per item in the card config.
  */
-const CARD_VERSION = "0.5.1";
+const CARD_VERSION = "0.6.0";
 
 // SVG coordinate system (viewBox 0 -25 1060 770). Label positions are given
 // in SVG units and converted to percentages of the card.
@@ -232,12 +232,12 @@ const LABELS = [
   ["hptr4", 180, 607, false, C.liquid],
   ["hptc3", 435, 230, true, C.flow],
   ["hptc1", 585, 230, true, C.flow],
-  ["hptc0", 588, 610, true, C.ret],
+  ["hptc0", 580, 640, true, C.ret],
   ["auxheaterstatus", 580, 335, false, C.neutral],
   ["wwcurtemp", 610, 410, false, C.floor, true],
   ["hptw1", 610, 460, false, C.floor],
-  ["hpcircspd", 680, 610, false, C.ret],
-  ["vc0valve", 750, 535, false, C.neutral],
+  ["hpcircspd", 610, 674, false, C.ret],
+  ["vc0valve", 750, 648, false, C.neutral],
   ["curflowtemp", 885, 232, true, C.flow],
   ["targetflowtemp", 885, 204, true, C.discharge],
   ["currtemp", 920, 82, true, C.room],
@@ -259,8 +259,8 @@ const ARROWS = [
   ["w_ch", 728, 295, 0, C.flow],
   ["w_dhw", 690, 342, 90, C.flow],
   ["w_buf", 800, 295, 0, C.flow],
-  ["w_ret", 778, 575, 180, C.ret],
-  ["w_byp", 750, 480, 90, C.flow],
+  ["w_ret", 792, 550, 90, C.ret],
+  ["w_byp", 755, 480, 90, C.flow],
 ];
 
 const arrowSvg = ([id, x, y, a, col]) =>
@@ -274,9 +274,9 @@ function buildSvg(t, ref) {
       <path d="M0 0 L10 5 L0 10 z" fill="#9e9e9e"/>
     </marker>
   </defs>
-  <rect x="20" y="60" width="480" height="600" rx="16" fill="#9e9e9e" fill-opacity="0.07" stroke="#9e9e9e" stroke-opacity="0.5" stroke-width="2"/>
-  <rect x="530" y="60" width="250" height="600" rx="16" fill="#9e9e9e" fill-opacity="0.07" stroke="#9e9e9e" stroke-opacity="0.5" stroke-width="2"/>
-  <rect x="800" y="60" width="240" height="600" rx="16" fill="#9e9e9e" fill-opacity="0.07" stroke="#9e9e9e" stroke-opacity="0.5" stroke-width="2" stroke-dasharray="6 6"/>
+  <rect x="20" y="60" width="480" height="670" rx="16" fill="#9e9e9e" fill-opacity="0.07" stroke="#9e9e9e" stroke-opacity="0.5" stroke-width="2"/>
+  <rect x="530" y="60" width="250" height="670" rx="16" fill="#9e9e9e" fill-opacity="0.07" stroke="#9e9e9e" stroke-opacity="0.5" stroke-width="2"/>
+  <rect x="800" y="60" width="240" height="670" rx="16" fill="#9e9e9e" fill-opacity="0.07" stroke="#9e9e9e" stroke-opacity="0.5" stroke-width="2" stroke-dasharray="6 6"/>
   <g class="txt" font-size="15" font-weight="bold">
     <text x="36" y="44">${t.outdoor_unit}</text>
     <text x="538" y="44">${t.tower}</text>
@@ -303,7 +303,7 @@ function buildSvg(t, ref) {
     <text x="375" y="400" transform="rotate(-90 375 400)">${t.condenser}</text>
     <text x="845" y="540">${t.buffer}</text>
     <text x="594" y="264">${t.backup}</text>
-    <text x="690" y="263">${t.threeway}</text>
+    <text x="684" y="648">${t.threeway}</text>
     <text x="600" y="362">${t.dhw}</text>
     <text x="950" y="525" font-size="13">${t.floor}</text>
   </g>
@@ -333,42 +333,42 @@ function buildSvg(t, ref) {
     <line x1="350" y1="475" x2="400" y2="495"/>
   </g>
   <path d="M400 295 H558" fill="none" stroke="#e53935" stroke-width="5"/>
-  <path d="M602 295 H674" fill="none" stroke="#e53935" stroke-width="5"/>
-  <path d="M706 295 H820" fill="none" stroke="#e53935" stroke-width="5"/>
-  <path d="M690 311 V370" fill="none" stroke="#e53935" stroke-width="5"/>
+  <path d="M602 295 H820" fill="none" stroke="#e53935" stroke-width="5"/>
+  <path d="M690 295 V370" fill="none" stroke="#e53935" stroke-width="5"/>
   <path d="M870 295 H904" fill="none" stroke="#e57373" stroke-width="4"/>
   <path d="M936 295 H1010 V325 H895 V355 H1010 V385 H895 V415 H1010 V445 H895 V475 H1010 V500 H870" fill="none" stroke="#e57373" stroke-width="4" stroke-linejoin="round"/>
-  <path d="M820 500 H792 V575 H766" fill="none" stroke="#1e88e5" stroke-width="5"/>
-  <path d="M734 575 H686" fill="none" stroke="#1e88e5" stroke-width="5"/>
-  <path d="M654 575 H515 V485 H400" fill="none" stroke="#1e88e5" stroke-width="5"/>
+  <path d="M820 500 H792 V600 H771" fill="none" stroke="#1e88e5" stroke-width="5"/>
+  <path d="M739 600 H706" fill="none" stroke="#1e88e5" stroke-width="5"/>
+  <path d="M674 600 H626" fill="none" stroke="#1e88e5" stroke-width="5"/>
+  <path d="M594 600 H515 V485 H400" fill="none" stroke="#1e88e5" stroke-width="5"/>
   <rect x="820" y="260" width="50" height="260" rx="22" fill="#9e9e9e" fill-opacity="0.15" stroke="#9e9e9e" stroke-width="2"/>
   <rect x="822" y="262" width="46" height="120" rx="20" fill="#e53935" fill-opacity="0.15"/>
   <rect x="822" y="400" width="46" height="118" rx="20" fill="#1e88e5" fill-opacity="0.15"/>
-  <path d="M690 550 V575" fill="none" stroke="#1e88e5" stroke-width="5"/>
-  <path d="M750 295 V559" fill="none" stroke="#e53935" stroke-width="3" stroke-dasharray="7 4"/>
+  <path d="M690 550 V584" fill="none" stroke="#1e88e5" stroke-width="5"/>
+  <path d="M755 295 V584" fill="none" stroke="#e53935" stroke-width="3" stroke-dasharray="7 4"/>
   <g class="click" data-key="vc0valve">
     <g fill="none" stroke="#9e9e9e" stroke-width="1.8" stroke-linejoin="round">
-      <path class="port open" d="M734 565 L750 575 L734 585 Z"/>
-      <path id="vc0_ab" class="port" d="M766 565 L750 575 L766 585 Z"/>
-      <path id="vc0_byp" class="port" d="M740 559 L750 575 L760 559 Z"/>
+      <path class="port open" d="M739 590 L755 600 L739 610 Z"/>
+      <path id="vc0_ab" class="port" d="M771 590 L755 600 L771 610 Z"/>
+      <path id="vc0_byp" class="port" d="M745 584 L755 600 L765 584 Z"/>
     </g>
-    <line x1="750" y1="575" x2="750" y2="587" stroke="#9e9e9e" stroke-width="1.8"/><circle cx="750" cy="593" r="6" fill="none" stroke="#9e9e9e" stroke-width="1.8"/>
+    <line x1="755" y1="600" x2="755" y2="612" stroke="#9e9e9e" stroke-width="1.8"/><circle cx="755" cy="618" r="6" fill="none" stroke="#9e9e9e" stroke-width="1.8"/>
   </g>
   <path d="M558 295 L580 273 L602 295 L580 317 Z" fill="#ffca28" fill-opacity="0.25" stroke="#ffca28" stroke-width="2" stroke-linejoin="round"/>
   <g fill="#ffca28"><path d="M574 279 L586 279 L580 289 Z"/><path d="M574 311 L586 311 L580 301 Z"/></g>
   <g class="click" data-key="ww3wayvalve">
     <g fill="none" stroke="#9e9e9e" stroke-width="1.8" stroke-linejoin="round">
-      <path class="port open" d="M674 285 L690 295 L674 305 Z"/>
-      <path id="w3_ch" class="port" d="M706 285 L690 295 L706 305 Z"/>
-      <path id="w3_dhw" class="port" d="M680 311 L690 295 L700 311 Z"/>
+      <path class="port open" d="M674 590 L690 600 L674 610 Z"/>
+      <path id="w3_ch" class="port" d="M706 590 L690 600 L706 610 Z"/>
+      <path id="w3_dhw" class="port" d="M680 584 L690 600 L700 584 Z"/>
     </g>
-    <line x1="690" y1="295" x2="690" y2="283" stroke="#9e9e9e" stroke-width="1.8"/><circle cx="690" cy="277" r="6" fill="none" stroke="#9e9e9e" stroke-width="1.8"/>
+    <line x1="690" y1="600" x2="690" y2="612" stroke="#9e9e9e" stroke-width="1.8"/><circle cx="690" cy="618" r="6" fill="none" stroke="#9e9e9e" stroke-width="1.8"/>
   </g>
   <rect x="560" y="370" width="160" height="180" rx="30" fill="#e53935" fill-opacity="0.08" stroke="#9e9e9e" stroke-width="2"/>
   <path d="M690 370 V395 L660 407 L700 419 L660 431 L700 443 L660 455 L700 467 L660 479 L700 491 L660 503 L700 515 L690 525 V550" fill="none" stroke="#e57373" stroke-width="3" stroke-linejoin="round"/>
   <g class="click" data-key="heatingpump">
-    <circle cx="670" cy="575" r="16" fill="#1e88e5" fill-opacity="0.2" stroke="#1e88e5" stroke-width="2"/>
-    <polygon id="pump_hp" class="pump" points="10,0 -7,-10 -7,10" transform="translate(670 575) rotate(180)"/>
+    <circle cx="610" cy="600" r="16" fill="#1e88e5" fill-opacity="0.2" stroke="#1e88e5" stroke-width="2"/>
+    <polygon id="pump_hp" class="pump" points="10,0 -7,-10 -7,10" transform="translate(610 600) rotate(180)"/>
   </g>
   <g class="click" data-key="pc1on">
     <circle cx="920" cy="295" r="16" fill="#e53935" fill-opacity="0.2" stroke="#e53935" stroke-width="2"/>
@@ -381,7 +381,7 @@ function buildSvg(t, ref) {
     <line x1="180" y1="599" x2="180" y2="580" stroke="#ffb74d"/><circle cx="180" cy="580" r="3.5" fill="#ffb74d"/>
     <line x1="435" y1="238" x2="435" y2="295" stroke="#e53935"/><circle cx="435" cy="295" r="3.5" fill="#e53935"/>
     <line x1="544" y1="242" x2="544" y2="295" stroke="#e53935"/><circle cx="544" cy="295" r="3.5" fill="#e53935"/>
-    <line x1="588" y1="590" x2="588" y2="575" stroke="#1e88e5"/><circle cx="588" cy="575" r="3.5" fill="#1e88e5"/>
+    <line x1="580" y1="628" x2="580" y2="600" stroke="#1e88e5"/><circle cx="580" cy="600" r="3.5" fill="#1e88e5"/>
     <line x1="845" y1="243" x2="845" y2="320" stroke="#e53935"/><circle cx="845" cy="320" r="3.5" fill="#e53935"/>
   </g>
   <g class="txt" font-size="11" text-anchor="middle">
@@ -632,7 +632,7 @@ class EnvilineSchemaCard extends HTMLElement {
       w_ch: pumpOn && !dhw,
       w_dhw: pumpOn && dhw,
       w_buf: pumpOn && !dhw && !bypass,
-      w_ret: pumpOn && !bypass,
+      w_ret: pumpOn && !dhw && !bypass,
       w_byp: pumpOn && !dhw && bypass,
     };
     for (const [id, on] of Object.entries(show)) root.getElementById(id).classList.toggle("show", on);
