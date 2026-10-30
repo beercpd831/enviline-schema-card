@@ -4,7 +4,7 @@
  * heat pump read through EMS-ESP. Entities are auto-detected from the
  * EMS-ESP names and can be overridden per item in the card config.
  */
-const CARD_VERSION = "0.7.0";
+const CARD_VERSION = "0.7.1";
 
 // SVG coordinate system (viewBox 0 -25 1060 770). Label positions are given
 // in SVG units and converted to percentages of the card.
@@ -702,7 +702,8 @@ class EnvilineSchemaCardEditor extends HTMLElement {
       this.appendChild(this._form);
     }
     this._form.hass = this._hass;
-    this._form.data = this._config;
+    // Show 100 % on the slider when max_width is not set (full width).
+    this._form.data = { max_width: 100, ...this._config };
     this._form.schema = [
       { name: "auto_detect", selector: { boolean: {} } },
       { name: "transparent", selector: { boolean: {} } },
