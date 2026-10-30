@@ -1,0 +1,43 @@
+name: Bug report
+description: Something in the card is wrong or does not work.
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for reporting! Please check that you are on the latest release and that you reloaded the page (Ctrl+Shift+R) after updating in HACS.
+  - type: textarea
+    id: what
+    attributes:
+      label: What happens?
+      description: What did you expect, and what do you see instead? A screenshot helps a lot.
+    validations:
+      required: true
+  - type: input
+    id: card_version
+    attributes:
+      label: Card version
+      description: Shown in the browser console (F12) as ENVILINE-SCHEMA-CARD vX.Y.Z.
+      placeholder: v0.7.1
+    validations:
+      required: true
+  - type: input
+    id: ha_version
+    attributes:
+      label: Home Assistant version
+      placeholder: "2026.10.3"
+  - type: input
+    id: emsesp_version
+    attributes:
+      label: EMS-ESP version and heat pump model
+      placeholder: "EMS-ESP 3.7.2, EnviLine Tower 7 kW"
+  - type: textarea
+    id: config
+    attributes:
+      label: Card configuration (YAML)
+      render: yaml
+  - type: textarea
+    id: console
+    attributes:
+      label: Errors in the browser console (if any)
+      render: text
