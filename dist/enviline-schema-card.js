@@ -4,7 +4,7 @@
  * heat pump read through EMS-ESP. Entities are auto-detected from the
  * EMS-ESP names and can be overridden per item in the card config.
  */
-const CARD_VERSION = "0.6.0";
+const CARD_VERSION = "0.7.0";
 
 // SVG coordinate system (viewBox 0 -25 1060 770). Label positions are given
 // in SVG units and converted to percentages of the card.
@@ -393,9 +393,9 @@ function buildSvg(t, ref) {
 }
 
 const STYLE = `
-  ha-card { container-type: inline-size; overflow: hidden; }
+  ha-card { overflow: hidden; }
   ha-card.bare { background: none; border: none; box-shadow: none; }
-  .wrap { position: relative; width: 100%; }
+  .wrap { position: relative; width: 100%; margin: 0 auto; container-type: inline-size; }
   svg { display: block; width: 100%; height: auto; }
   .txt text { fill: var(--secondary-text-color, #9e9e9e); }
   .dot line { stroke-width: 1.2; stroke-dasharray: 3 2; opacity: 0.8; }
@@ -459,6 +459,13 @@ class EnvilineSchemaCard extends HTMLElement {
   set hass(hass) {
     this._hass = hass;
     this._render();
+  }
+
+  _maxWidth() {
+    const w = this._config.max_width;
+    if (w === undefined || w === null || w === "") return "none";
+    if (typeof w === "number" || /^\d+(\.\d+)?$/.test(String(w).trim())) return `${Math.min(100, Math.max(20, Number(w)))}%`;
+    return /^\d+(\.\d+)?(px|%|em|rem|vw)$/.test(String(w).trim()) ? String(w).trim() : "none";
   }
 
   getCardSize() {
@@ -525,7 +532,7 @@ class EnvilineSchemaCard extends HTMLElement {
     this.shadowRoot.innerHTML = `
       <style>${STYLE}</style>
       <ha-card class="${this._config.transparent ? "bare" : ""}">
-        <div class="wrap">
+        <div class="wrap" style="max-width:${this._maxWidth()}">
           ${buildSvg(t, this._refrigerant())}
           ${labels}
           <div class="comp" data-key="hpcompspd" style="left:${pctX(240)}%;top:${pctY(320)}%"><ha-icon icon="mdi:heat-pump"></ha-icon></div>
@@ -659,8 +666,8 @@ const EDITOR_GROUPS = [
   ["room", ["currtemp", "seltemp", "dampedoutdoortemp"]],
 ];
 const GROUP_TITLES = {
-  nl: { refrigerant: "Koudemiddel en compressor", outdoor: "Buitenunit", water: "Watercircuit", dhw: "Warm water", power: "Vermogen", room: "Thermostaat", auto: "EMS-ESP-entiteiten automatisch zoeken", transparent: "Transparante achtergrond", language: "Taal (leeg = HA-taal)", refrigerant: "Koudemiddel (voor druk in bar, zie typeplaatje)" },
-  en: { refrigerant: "Refrigerant and compressor", outdoor: "Outdoor unit", water: "Water circuit", dhw: "Hot water", power: "Power", room: "Thermostat", auto: "Auto-detect EMS-ESP entities", transparent: "Transparent background", language: "Language (empty = HA language)", refrigerant: "Refrigerant (for pressure in bar, see type plate)" },
+  nl: { refrigerant: "Koudemiddel en compressor", outdoor: "Buitenunit", water: "Watercircuit", dhw: "Warm water", power: "Vermogen", room: "Thermostaat", auto: "EMS-ESP-entiteiten automatisch zoeken", transparent: "Transparante achtergrond", max_width: "Maximale breedte (%)", language: "Taal (leeg = HA-taal)", refrigerant: "Koudemiddel (voor druk in bar, zie typeplaatje)" },
+  en: { refrigerant: "Refrigerant and compressor", outdoor: "Outdoor unit", water: "Water circuit", dhw: "Hot water", power: "Power", room: "Thermostat", auto: "Auto-detect EMS-ESP entities", transparent: "Transparent background", max_width: "Maximum width (%)", language: "Language (empty = HA language)", refrigerant: "Refrigerant (for pressure in bar, see type plate)" },
 };
 
 class EnvilineSchemaCardEditor extends HTMLElement {
@@ -689,6 +696,7 @@ class EnvilineSchemaCardEditor extends HTMLElement {
         config.entities = entities;
         if (!config.language) delete config.language;
         if (!config.refrigerant) delete config.refrigerant;
+        if (!config.max_width || config.max_width >= 100) delete config.max_width;
         this.dispatchEvent(new CustomEvent("config-changed", { bubbles: true, composed: true, detail: { config } }));
       });
       this.appendChild(this._form);
@@ -698,6 +706,7 @@ class EnvilineSchemaCardEditor extends HTMLElement {
     this._form.schema = [
       { name: "auto_detect", selector: { boolean: {} } },
       { name: "transparent", selector: { boolean: {} } },
+      { name: "max_width", selector: { number: { min: 20, max: 100, step: 5, mode: "slider", unit_of_measurement: "%" } } },
       { name: "refrigerant", selector: { select: { mode: "dropdown", options: Object.keys(REFRIGERANTS) } } },
       { name: "language", selector: { select: { mode: "dropdown", options: [{ value: "nl", label: "Nederlands" }, { value: "en", label: "English" }] } } },
       ...EDITOR_GROUPS.map(([group, keys]) => ({
@@ -710,6 +719,7 @@ class EnvilineSchemaCardEditor extends HTMLElement {
     this._form.computeLabel = (s) => {
       if (s.name === "auto_detect") return g.auto;
       if (s.name === "transparent") return g.transparent;
+      if (s.name === "max_width") return g.max_width;
       if (s.name === "language") return g.language;
       if (s.name === "refrigerant") return g.refrigerant;
       const def = d[s.name];
