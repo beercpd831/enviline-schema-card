@@ -41,6 +41,7 @@ Auto-detection looks for entity ids that end in the EMS-ESP short name (`…_hpt
 ```yaml
 type: custom:enviline-schema-card
 transparent: true          # no card background
+max_width: 80              # optional: limit the width (in % of the card, or e.g. 900px), centred
 language: nl               # nl or en, default = HA language
 refrigerant: R410A         # R410A, R32 or R290: also show PL1/PH1 as pressure in bar
 hide: [hpea0, hptr1]       # labels to leave out
