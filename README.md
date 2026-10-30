@@ -97,6 +97,10 @@ EMS-ESP has no live electrical power for the EnviLine, so `electric_power` has t
 - The meaning of VC0 "on" as bypass (A→AB) is an assumption; check it against your own installation.
 - Sensor positions follow the Bosch EnviLine installation manual (Tower-Solar schema).
 
+## Questions and bugs
+
+Found a bug or have an idea? Open an [issue](https://github.com/beercpd831/enviline-schema-card/issues/new/choose). Please include the card version (browser console, F12), your EMS-ESP version and heat pump model, and a screenshot.
+
 ## Releases
 
 Bump `CARD_VERSION` in `dist/enviline-schema-card.js`. When that change lands on `main`, the Release workflow tags it (`v0.4.0`, ...) and publishes a GitHub release, so HACS offers it as a versioned update.

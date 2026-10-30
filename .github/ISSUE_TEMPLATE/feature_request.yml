@@ -1,0 +1,19 @@
+name: Feature request
+description: An idea for the card, such as a new sensor, option or another EnviLine model.
+labels: [enhancement]
+body:
+  - type: textarea
+    id: idea
+    attributes:
+      label: What would you like?
+    validations:
+      required: true
+  - type: textarea
+    id: why
+    attributes:
+      label: Why would it help?
+  - type: textarea
+    id: entities
+    attributes:
+      label: EMS-ESP entities involved (if any)
+      description: For example sensor.boiler_hptc3.
