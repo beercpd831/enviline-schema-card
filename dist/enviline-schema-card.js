@@ -1,10 +1,11 @@
 /*
  * EnviLine Schema Card
  * Live hydraulic and refrigerant diagram for a Nefit-Bosch EnviLine Tower
- * heat pump read through EMS-ESP. Entities are auto-detected from the
+ * heat pump read through EMS-ESP (also the Bosch Compress 5800i AW, see
+ * MODELS). Entities are auto-detected from the
  * EMS-ESP names and can be overridden per item in the card config.
  */
-const CARD_VERSION = "0.7.1";
+const CARD_VERSION = "0.8.0";
 
 // SVG coordinate system (viewBox 0 -25 1060 770). Label positions are given
 // in SVG units and converted to percentages of the card.
@@ -34,6 +35,23 @@ const REFRIGERANTS = {
   R290: [9.6478, 2140.6, 264.5],
 };
 
+// Heat pump models. `model:` in the card config picks one; the rest of the
+// card is shared. Lovelace reserves `type`, hence the name `model`.
+//   title: name of the indoor unit frame
+//   refrigerant: default for the `refrigerant` option
+//   heat_source: "hppower" = EMS-ESP heat output, "flow" = calculated from
+//   PC0 flow and TC1 - TC0 (the 5800i reports hppower close to the
+//   electrical power, so it is not used as heat output there)
+const MODELS = {
+  enviline: { title: { nl: "EnviLine Tower", en: "EnviLine Tower" }, heat_source: "hppower" },
+  compress_5800i: { title: { nl: "Compress 5800i AW binnendeel", en: "Compress 5800i AW indoor unit" }, refrigerant: "R290", heat_source: "flow" },
+};
+
+// Buffer tank layouts: 4 = in line with four connections (heat pump in/out,
+// heating circuit in/out), 2 = on T-pieces between flow and return,
+// none = no buffer tank.
+const BUFFERS = ["4", "2", "none"];
+
 // key: [domain, EMS-ESP suffix used for auto-detection]
 const ENTITY_DEFS = {
   outdoortemp: ["sensor", "outdoortemp"],
@@ -57,7 +75,9 @@ const ENTITY_DEFS = {
   hptc1: ["sensor", "hptc1"],
   hptc0: ["sensor", "hptc0"],
   hppower: ["sensor", "hppower"],
-  electric_power: ["sensor", null],
+  electric_power: ["sensor", "hpcurrpower"],
+  pc0flow: ["sensor", "pc0flow"],
+  fanspd: ["sensor", "fanspd"],
   cop: ["sensor", null],
   nrgsupptotal: ["sensor", "nrgsupptotal"],
   nrgconstotal: ["sensor", "nrgconstotal"],
@@ -95,6 +115,7 @@ const I18N = {
     threeway: "3-wegklep",
     dhw: "Warm water",
     cop_calc: "COP (berekend uit warmte en elektrisch vermogen)",
+    heat_flow: "Warmtevermogen, berekend: debiet PC0 × (TC1 − TC0) × 1,163 W per l/h per K",
     legend_p: "PL1 / PH1 = druksensor, omgerekend naar verzadigingstemperatuur",
     legend_p_ref: "PL1 / PH1 = druksensor: bar (abs., {r}) en verzadigingstemp.",
     pressure_note: "Druk absoluut, berekend uit de verzadigingstemperatuur voor {r}",
@@ -121,7 +142,9 @@ const I18N = {
       hptc1: ["TC1 ", "TC1 - Aanvoer in Tower (voor bijverwarming)"],
       hptc0: ["TC0 ", "TC0 - Retour naar warmtepomp (in Tower, na pomp)"],
       hppower: ["Warmte ", "Afgegeven warmtevermogen"],
-      electric_power: ["Elektrisch ", "Elektrisch vermogen warmtepomp"],
+      electric_power: ["Elektrisch ", "Elektrisch vermogen warmtepomp (zonder eigen meter: EMS-ESP compressorvermogen hpcurrpower)"],
+      pc0flow: ["Debiet ", "Debiet primaire pomp PC0"],
+      fanspd: ["Ventilator ", "Snelheid ventilator buitenunit"],
       cop: ["COP ", "COP - warmte gedeeld door elektrisch vermogen"],
       scop: ["SCOP ", "Seizoens-COP sinds installatie: opgewekte energie gedeeld door energieverbruik (EMS-ESP-tellers, inclusief bijverwarming)"],
       nrgsupptotal: ["", "Totaal opgewekte energie (EMS-ESP)"],
@@ -134,6 +157,7 @@ const I18N = {
       hpcircspd: ["Pomp ", "Snelheid circulatiepomp warmtepomp-circuit"],
       vc0valve: ["VC0 ", "VC0 - Bypassklep (aan = bypass)"],
       curflowtemp: ["Buffer T0 ", "T0 - Aanvoertemperatuur, bovenin het buffervat (zelfde sensor als headertemp)"],
+      curflowtemp_nobuf: ["T0 ", "T0 - Aanvoertemperatuur naar het verwarmingscircuit"],
       targetflowtemp: ["Berekend ", "Berekende aanvoertemperatuur (stooklijn)"],
       headertemp: ["Buffer ", "Temperatuur buffervat / open verdeler (reserve voor T0, zelfde sensor)"],
       pc1on: ["", "Circulatiepomp vloerverwarming (PC1)"],
@@ -159,6 +183,7 @@ const I18N = {
     threeway: "3-way valve",
     dhw: "Hot water",
     cop_calc: "COP (calculated from heat output and electrical power)",
+    heat_flow: "Heat output, calculated: PC0 flow × (TC1 − TC0) × 1.163 W per l/h per K",
     legend_p: "PL1 / PH1 = pressure sensor, shown as saturation temperature",
     legend_p_ref: "PL1 / PH1 = pressure sensor: bar (abs., {r}) and saturation temp.",
     pressure_note: "Absolute pressure, calculated from the saturation temperature for {r}",
@@ -185,7 +210,9 @@ const I18N = {
       hptc1: ["TC1 ", "TC1 - Flow in Tower (before backup heater)"],
       hptc0: ["TC0 ", "TC0 - Return to heat pump (in Tower, after pump)"],
       hppower: ["Heat ", "Heat output"],
-      electric_power: ["Electric ", "Heat pump electrical power"],
+      electric_power: ["Electric ", "Heat pump electrical power (without a meter of its own: EMS-ESP compressor power hpcurrpower)"],
+      pc0flow: ["Flow ", "Primary pump PC0 flow rate"],
+      fanspd: ["Fan ", "Outdoor unit fan speed"],
       cop: ["COP ", "COP - heat output divided by electrical power"],
       scop: ["SCOP ", "Seasonal COP since installation: energy supplied divided by energy consumed (EMS-ESP counters, backup heater included)"],
       nrgsupptotal: ["", "Total energy supplied (EMS-ESP)"],
@@ -198,6 +225,7 @@ const I18N = {
       hpcircspd: ["Pump ", "Heat pump circuit pump speed"],
       vc0valve: ["VC0 ", "VC0 - Bypass valve (on = bypass)"],
       curflowtemp: ["Buffer T0 ", "T0 - Flow temperature, top of the buffer tank (same sensor as headertemp)"],
+      curflowtemp_nobuf: ["T0 ", "T0 - Flow temperature to the heating circuit"],
       targetflowtemp: ["Target ", "Calculated flow temperature (heating curve)"],
       headertemp: ["Buffer ", "Buffer tank / low-loss header temperature (fallback for T0, same sensor)"],
       pc1on: ["", "Underfloor heating pump (PC1)"],
@@ -237,6 +265,8 @@ const LABELS = [
   ["wwcurtemp", 610, 410, false, C.floor, true],
   ["hptw1", 610, 460, false, C.floor],
   ["hpcircspd", 610, 674, false, C.ret],
+  ["pc0flow", 610, 699, false, C.ret],
+  ["fanspd", 80, 665, false, C.air],
   ["vc0valve", 750, 648, false, C.neutral],
   ["curflowtemp", 885, 232, true, C.flow],
   ["targetflowtemp", 885, 204, true, C.discharge],
@@ -266,7 +296,49 @@ const ARROWS = [
 const arrowSvg = ([id, x, y, a, col]) =>
   `<polygon id="${id}" class="arrow" points="7,0 -6,-7 -6,7" fill="${col}" transform="translate(${x} ${y}) rotate(${a})"/>`;
 
-function buildSvg(t, ref) {
+// SVG pieces that depend on the buffer tank layout.
+function bufferSvg(mode, t) {
+  const tank = (y1, y2) => {
+    const mid = (y1 + y2) / 2;
+    return `<rect x="820" y="${y1}" width="50" height="${y2 - y1}" rx="22" fill="#9e9e9e" fill-opacity="0.15" stroke="#9e9e9e" stroke-width="2"/>
+  <rect x="822" y="${y1 + 2}" width="46" height="${mid - y1 - 10}" rx="20" fill="#e53935" fill-opacity="0.15"/>
+  <rect x="822" y="${mid + 10}" width="46" height="${y2 - mid - 12}" rx="20" fill="#1e88e5" fill-opacity="0.15"/>`;
+  };
+  const t0 = (x, y) => `<line x1="${x}" y1="243" x2="${x}" y2="${y}" stroke="#e53935"/><circle cx="${x}" cy="${y}" r="3.5" fill="#e53935"/>`;
+  if (mode === "4") {
+    // In line: heat pump flow in and return out on the left, heating circuit on the right.
+    return {
+      flow: `<path d="M602 295 H820" fill="none" stroke="#e53935" stroke-width="5"/>`,
+      pipes: `<path d="M870 295 H904" fill="none" stroke="#e57373" stroke-width="4"/>
+  <path d="M936 295 H1010 V325 H895 V355 H1010 V385 H895 V415 H1010 V445 H895 V475 H1010 V500 H870" fill="none" stroke="#e57373" stroke-width="4" stroke-linejoin="round"/>
+  <path d="M820 500 H792 V600 H771" fill="none" stroke="#1e88e5" stroke-width="5"/>`,
+      tank: tank(260, 520),
+      text: `<text x="845" y="540">${t.buffer}</text>`,
+      t0: t0(845, 320),
+    };
+  }
+  // Flow and return run straight through to the heating circuit.
+  const flow = `<path d="M602 295 H904" fill="none" stroke="#e53935" stroke-width="5"/>`;
+  const pipes = `<path d="M936 295 H1010 V325 H895 V355 H1010 V385 H895 V415 H1010 V445 H895 V475 H1010 V500 H870" fill="none" stroke="#e57373" stroke-width="4" stroke-linejoin="round"/>
+  <path d="M870 500 H792 V600 H771" fill="none" stroke="#1e88e5" stroke-width="5"/>`;
+  if (mode === "2") {
+    // On T-pieces: top connection on the flow, bottom connection on the return.
+    return {
+      flow,
+      pipes: `${pipes}
+  <path d="M845 295 V330" fill="none" stroke="#e53935" stroke-width="4"/>
+  <path d="M845 450 V500" fill="none" stroke="#1e88e5" stroke-width="4"/>
+  <circle cx="845" cy="295" r="5" fill="#e53935"/><circle cx="845" cy="500" r="5" fill="#1e88e5"/>`,
+      tank: tank(330, 450),
+      text: `<text x="845" y="530">${t.buffer}</text>`,
+      t0: t0(845, 350),
+    };
+  }
+  return { flow, pipes, tank: "", text: "", t0: t0(875, 295) };
+}
+
+function buildSvg(t, ref, opts = {}) {
+  const buf = bufferSvg(opts.buffer || "4", t);
   return `
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="${VB_X} ${VB_Y} ${VB_W} ${VB_H}" font-family="sans-serif">
   <defs>
@@ -279,7 +351,7 @@ function buildSvg(t, ref) {
   <rect x="800" y="60" width="240" height="670" rx="16" fill="#9e9e9e" fill-opacity="0.07" stroke="#9e9e9e" stroke-opacity="0.5" stroke-width="2" stroke-dasharray="6 6"/>
   <g class="txt" font-size="15" font-weight="bold">
     <text x="36" y="44">${t.outdoor_unit}</text>
-    <text x="538" y="44">${t.tower}</text>
+    <text x="538" y="44">${opts.title || t.tower}</text>
     <text x="808" y="44">${t.house}</text>
   </g>
   <g stroke="#9e9e9e" stroke-width="2" marker-end="url(#ah)">
@@ -301,7 +373,7 @@ function buildSvg(t, ref) {
     <text x="312" y="350">${t.compressor}</text>
     <text x="240" y="544">${t.eev}</text>
     <text x="375" y="400" transform="rotate(-90 375 400)">${t.condenser}</text>
-    <text x="845" y="540">${t.buffer}</text>
+    ${buf.text}
     <text x="594" y="264">${t.backup}</text>
     <text x="684" y="648">${t.threeway}</text>
     <text x="600" y="362">${t.dhw}</text>
@@ -333,17 +405,13 @@ function buildSvg(t, ref) {
     <line x1="350" y1="475" x2="400" y2="495"/>
   </g>
   <path d="M400 295 H558" fill="none" stroke="#e53935" stroke-width="5"/>
-  <path d="M602 295 H820" fill="none" stroke="#e53935" stroke-width="5"/>
+  ${buf.flow}
   <path d="M690 295 V370" fill="none" stroke="#e53935" stroke-width="5"/>
-  <path d="M870 295 H904" fill="none" stroke="#e57373" stroke-width="4"/>
-  <path d="M936 295 H1010 V325 H895 V355 H1010 V385 H895 V415 H1010 V445 H895 V475 H1010 V500 H870" fill="none" stroke="#e57373" stroke-width="4" stroke-linejoin="round"/>
-  <path d="M820 500 H792 V600 H771" fill="none" stroke="#1e88e5" stroke-width="5"/>
+  ${buf.pipes}
   <path d="M739 600 H706" fill="none" stroke="#1e88e5" stroke-width="5"/>
   <path d="M674 600 H626" fill="none" stroke="#1e88e5" stroke-width="5"/>
   <path d="M594 600 H515 V485 H400" fill="none" stroke="#1e88e5" stroke-width="5"/>
-  <rect x="820" y="260" width="50" height="260" rx="22" fill="#9e9e9e" fill-opacity="0.15" stroke="#9e9e9e" stroke-width="2"/>
-  <rect x="822" y="262" width="46" height="120" rx="20" fill="#e53935" fill-opacity="0.15"/>
-  <rect x="822" y="400" width="46" height="118" rx="20" fill="#1e88e5" fill-opacity="0.15"/>
+  ${buf.tank}
   <path d="M690 550 V584" fill="none" stroke="#1e88e5" stroke-width="5"/>
   <path d="M755 295 V584" fill="none" stroke="#e53935" stroke-width="3" stroke-dasharray="7 4"/>
   <g class="click" data-key="vc0valve">
@@ -382,7 +450,7 @@ function buildSvg(t, ref) {
     <line x1="435" y1="238" x2="435" y2="295" stroke="#e53935"/><circle cx="435" cy="295" r="3.5" fill="#e53935"/>
     <line x1="544" y1="242" x2="544" y2="295" stroke="#e53935"/><circle cx="544" cy="295" r="3.5" fill="#e53935"/>
     <line x1="580" y1="628" x2="580" y2="600" stroke="#1e88e5"/><circle cx="580" cy="600" r="3.5" fill="#1e88e5"/>
-    <line x1="845" y1="243" x2="845" y2="320" stroke="#e53935"/><circle cx="845" cy="320" r="3.5" fill="#e53935"/>
+    ${buf.t0}
   </g>
   <g class="txt" font-size="11" text-anchor="middle">
     <text x="300" y="639">${ref ? t.legend_p_ref.replace("{r}", ref) : t.legend_p}</text>
@@ -476,9 +544,38 @@ class EnvilineSchemaCard extends HTMLElement {
     return { columns: "full", min_columns: 6 };
   }
 
-  _t() {
+  _lang() {
     const lang = (this._config.language || this._hass?.locale?.language || this._hass?.language || "en").slice(0, 2);
-    return I18N[lang] || I18N.en;
+    return I18N[lang] ? lang : "en";
+  }
+
+  _t() {
+    return I18N[this._lang()];
+  }
+
+  _model() {
+    return MODELS[this._config.model] || MODELS.enviline;
+  }
+
+  _buffer() {
+    const b = String(this._config.buffer ?? "4").toLowerCase();
+    if (b === "0" || b === "false" || b === "no" || b === "geen") return "none";
+    return BUFFERS.includes(b) ? b : "4";
+  }
+
+  _heatSource() {
+    return this._config.heat_source === "flow" || this._config.heat_source === "hppower" ? this._config.heat_source : this._model().heat_source;
+  }
+
+  // Heat output in kW: from EMS-ESP hppower, or from the PC0 flow rate and
+  // the temperature rise TC0 -> TC1 (1.163 W per l/h per K for water).
+  _heat() {
+    if (this._heatSource() !== "flow") return this._num("hppower");
+    const flow = this._num("pc0flow");
+    const tc1 = this._num("hptc1");
+    const tc0 = this._num("hptc0");
+    if (flow === undefined || tc1 === undefined || tc0 === undefined) return undefined;
+    return (flow * Math.abs(tc1 - tc0) * 1.163) / 1000;
   }
 
   _entity(key) {
@@ -505,13 +602,18 @@ class EnvilineSchemaCard extends HTMLElement {
   }
 
   _refrigerant() {
-    const ref = String(this._config.refrigerant || "").toUpperCase();
+    const ref = String(this._config.refrigerant || this._model().refrigerant || "").toUpperCase();
     return REFRIGERANTS[ref] ? ref : undefined;
   }
 
   _fmt1(v) {
     const lang = this._hass.locale?.language || this._hass.language || "en";
     return new Intl.NumberFormat(lang, { minimumFractionDigits: 1, maximumFractionDigits: 1 }).format(v);
+  }
+
+  _fmt2(v) {
+    const lang = this._hass.locale?.language || this._hass.language || "en";
+    return new Intl.NumberFormat(lang, { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(v);
   }
 
   _format(stateObj) {
@@ -533,7 +635,7 @@ class EnvilineSchemaCard extends HTMLElement {
       <style>${STYLE}</style>
       <ha-card class="${this._config.transparent ? "bare" : ""}">
         <div class="wrap" style="max-width:${this._maxWidth()}">
-          ${buildSvg(t, this._refrigerant())}
+          ${buildSvg(t, this._refrigerant(), { title: this._config.title_indoor || this._model().title[this._lang()], buffer: this._buffer() })}
           ${labels}
           <div class="comp" data-key="hpcompspd" style="left:${pctX(240)}%;top:${pctY(320)}%"><ha-icon icon="mdi:heat-pump"></ha-icon></div>
         </div>
@@ -541,7 +643,8 @@ class EnvilineSchemaCard extends HTMLElement {
     this.shadowRoot.querySelectorAll("[data-key]").forEach((el) => {
       el.addEventListener("click", (ev) => {
         ev.stopPropagation();
-        const key = el.dataset.key;
+        let key = el.dataset.key;
+        if (key === "hppower" && this._heatSource() === "flow") key = "pc0flow";
         const entityId = this._entity(key) || this._entity(FALLBACK_ENTITY[key]);
         if (!entityId) return;
         this.dispatchEvent(new CustomEvent("hass-more-info", { bubbles: true, composed: true, detail: { entityId } }));
@@ -559,12 +662,19 @@ class EnvilineSchemaCard extends HTMLElement {
 
     root.querySelectorAll(".lbl").forEach((el) => {
       const key = el.dataset.key;
-      const [prefix, desc] = t.d[key];
+      const [prefix, desc] = key === "curflowtemp" && this._buffer() === "none" ? t.d.curflowtemp_nobuf : t.d[key];
       let text;
       let title = `${desc}\n${t.history}`;
       // T0 and headertemp are the same sensor in the buffer tank; either one fills the label.
-      const so = this._stateObj(key) || (key === "curflowtemp" ? this._stateObj("headertemp") : undefined);
-      if (so) {
+      const heatFromFlow = key === "hppower" && this._heatSource() === "flow";
+      const so = heatFromFlow ? undefined : this._stateObj(key) || (key === "curflowtemp" ? this._stateObj("headertemp") : undefined);
+      if (heatFromFlow) {
+        const heat = this._heat();
+        if (heat !== undefined) {
+          text = `${prefix}${this._fmt2(heat)} kW`;
+          title = `${t.heat_flow}\n${t.history}`;
+        }
+      } else if (so) {
         text = prefix + this._format(so);
         const ref = this._refrigerant();
         const sat = this._num(key);
@@ -574,7 +684,7 @@ class EnvilineSchemaCard extends HTMLElement {
           title = `${desc}. ${t.pressure_note.replace("{r}", ref)}\n${t.history}`;
         }
       } else if (key === "cop") {
-        const heat = this._num("hppower");
+        const heat = this._heat();
         const elec = this._num("electric_power");
         const unit = this._stateObj("electric_power")?.attributes.unit_of_measurement;
         if (heat !== undefined && elec && (this._num("hpcompspd") ?? 0) > 0) {
@@ -659,15 +769,15 @@ class EnvilineSchemaCard extends HTMLElement {
 
 const EDITOR_GROUPS = [
   ["refrigerant", ["hpcompspd", "hpactivity", "hp4way", "hppl1", "hptr5", "superheat_suction", "hpph1", "hptr6", "superheat_discharge", "hptr1", "hptr3", "hptr4"]],
-  ["outdoor", ["outdoortemp", "hptl2", "hpta4", "hpea0", "hpmode"]],
-  ["water", ["hptc3", "hptc1", "hptc0", "curflowtemp", "targetflowtemp", "heatingpump", "hpcircspd", "ww3wayvalve", "vc0valve", "auxheaterstatus", "headertemp", "pc1on"]],
+  ["outdoor", ["outdoortemp", "hptl2", "fanspd", "hpta4", "hpea0", "hpmode"]],
+  ["water", ["hptc3", "hptc1", "hptc0", "curflowtemp", "targetflowtemp", "heatingpump", "hpcircspd", "pc0flow", "ww3wayvalve", "vc0valve", "auxheaterstatus", "headertemp", "pc1on"]],
   ["dhw", ["wwcurtemp", "hptw1"]],
   ["power", ["hppower", "electric_power", "cop", "nrgsupptotal", "nrgconstotal"]],
   ["room", ["currtemp", "seltemp", "dampedoutdoortemp"]],
 ];
 const GROUP_TITLES = {
-  nl: { refrigerant: "Koudemiddel en compressor", outdoor: "Buitenunit", water: "Watercircuit", dhw: "Warm water", power: "Vermogen", room: "Thermostaat", auto: "EMS-ESP-entiteiten automatisch zoeken", transparent: "Transparante achtergrond", max_width: "Maximale breedte (%)", language: "Taal (leeg = HA-taal)", refrigerant: "Koudemiddel (voor druk in bar, zie typeplaatje)" },
-  en: { refrigerant: "Refrigerant and compressor", outdoor: "Outdoor unit", water: "Water circuit", dhw: "Hot water", power: "Power", room: "Thermostat", auto: "Auto-detect EMS-ESP entities", transparent: "Transparent background", max_width: "Maximum width (%)", language: "Language (empty = HA language)", refrigerant: "Refrigerant (for pressure in bar, see type plate)" },
+  nl: { refrigerant: "Koudemiddel en compressor", outdoor: "Buitenunit", water: "Watercircuit", dhw: "Warm water", power: "Vermogen", room: "Thermostaat", auto: "EMS-ESP-entiteiten automatisch zoeken", transparent: "Transparante achtergrond", max_width: "Maximale breedte (%)", language: "Taal (leeg = HA-taal)", refrigerant: "Koudemiddel (voor druk in bar, zie typeplaatje)", model: "Model warmtepomp", title_indoor: "Naam binnendeel (leeg = volgens model)", buffer: "Buffervat", heat_source: "Warmtevermogen (leeg = volgens model)", buffer_4: "In lijn, 4 aansluitingen", buffer_2: "Op T-stukken, 2 aansluitingen", buffer_none: "Geen buffervat", heat_hppower: "EMS-ESP hppower", heat_flow: "Berekend uit debiet PC0 en TC1 − TC0" },
+  en: { refrigerant: "Refrigerant and compressor", outdoor: "Outdoor unit", water: "Water circuit", dhw: "Hot water", power: "Power", room: "Thermostat", auto: "Auto-detect EMS-ESP entities", transparent: "Transparent background", max_width: "Maximum width (%)", language: "Language (empty = HA language)", refrigerant: "Refrigerant (for pressure in bar, see type plate)", model: "Heat pump model", title_indoor: "Indoor unit name (empty = from model)", buffer: "Buffer tank", heat_source: "Heat output (empty = from model)", buffer_4: "In line, 4 connections", buffer_2: "On T-pieces, 2 connections", buffer_none: "No buffer tank", heat_hppower: "EMS-ESP hppower", heat_flow: "Calculated from PC0 flow and TC1 − TC0" },
 };
 
 class EnvilineSchemaCardEditor extends HTMLElement {
@@ -696,6 +806,10 @@ class EnvilineSchemaCardEditor extends HTMLElement {
         config.entities = entities;
         if (!config.language) delete config.language;
         if (!config.refrigerant) delete config.refrigerant;
+        if (!config.title_indoor) delete config.title_indoor;
+        if (!config.heat_source) delete config.heat_source;
+        if (!config.model || config.model === "enviline") delete config.model;
+        if (!config.buffer || config.buffer === "4") delete config.buffer;
         if (!config.max_width || config.max_width >= 100) delete config.max_width;
         this.dispatchEvent(new CustomEvent("config-changed", { bubbles: true, composed: true, detail: { config } }));
       });
@@ -703,8 +817,12 @@ class EnvilineSchemaCardEditor extends HTMLElement {
     }
     this._form.hass = this._hass;
     // Show 100 % on the slider when max_width is not set (full width).
-    this._form.data = { max_width: 100, ...this._config };
+    this._form.data = { max_width: 100, model: "enviline", ...this._config, buffer: this._config.buffer === undefined ? "4" : String(this._config.buffer) };
     this._form.schema = [
+      { name: "model", selector: { select: { mode: "dropdown", options: [{ value: "enviline", label: "Nefit-Bosch EnviLine" }, { value: "compress_5800i", label: "Bosch Compress 5800i AW" }] } } },
+      { name: "title_indoor", selector: { text: {} } },
+      { name: "buffer", selector: { select: { mode: "dropdown", options: BUFFERS.map((b) => ({ value: b, label: g[`buffer_${b}`] })) } } },
+      { name: "heat_source", selector: { select: { mode: "dropdown", options: [{ value: "hppower", label: g.heat_hppower }, { value: "flow", label: g.heat_flow }] } } },
       { name: "auto_detect", selector: { boolean: {} } },
       { name: "transparent", selector: { boolean: {} } },
       { name: "max_width", selector: { number: { min: 20, max: 100, step: 5, mode: "slider", unit_of_measurement: "%" } } },
@@ -723,6 +841,7 @@ class EnvilineSchemaCardEditor extends HTMLElement {
       if (s.name === "max_width") return g.max_width;
       if (s.name === "language") return g.language;
       if (s.name === "refrigerant") return g.refrigerant;
+      if (["model", "title_indoor", "buffer", "heat_source"].includes(s.name)) return g[s.name];
       const def = d[s.name];
       if (!def) return s.name;
       const found = this._config.entities?.[s.name] ? "" : autoDetect(this._hass, s.name);
@@ -738,7 +857,7 @@ window.customCards = window.customCards || [];
 window.customCards.push({
   type: "enviline-schema-card",
   name: "EnviLine Schema Card",
-  description: "Live diagram of a Nefit-Bosch EnviLine heat pump via EMS-ESP",
+  description: "Live diagram of a Nefit-Bosch EnviLine or Bosch Compress 5800i AW heat pump via EMS-ESP",
   preview: false,
   documentationURL: "https://github.com/beercpd831/enviline-schema-card",
 });

@@ -1,6 +1,6 @@
 # EnviLine Schema Card
 
-A live Lovelace diagram of a **Nefit-Bosch EnviLine Tower** heat pump (all-electric monobloc outdoor unit), read through **[EMS-ESP](https://emsesp.org)**. It shows the refrigerant circuit, the water side in the Tower (backup heater, 3-way valve, hot-water coil, primary pump, VC0 bypass valve) and the buffer tank with underfloor heating, with every sensor in place.
+A live Lovelace diagram of a **Nefit-Bosch EnviLine Tower** heat pump (and the **Bosch Compress 5800i AW**, see [Models](#models-and-buffer-tank)) (all-electric monobloc outdoor unit), read through **[EMS-ESP](https://emsesp.org)**. It shows the refrigerant circuit, the water side in the Tower (backup heater, 3-way valve, hot-water coil, primary pump, VC0 bypass valve) and the buffer tank with underfloor heating, with every sensor in place.
 
 ![Dark theme, heat pump heating the house](docs/heat-dark.png)
 
@@ -51,6 +51,34 @@ entities:
   hptc0: sensor.boiler_hptc0
 ```
 
+### Models and buffer tank
+
+```yaml
+type: custom:enviline-schema-card
+model: compress_5800i      # enviline (default) or compress_5800i
+title_indoor: Compress 5800i AW   # optional, overrides the name of the indoor unit
+buffer: 2                  # 4 (default), 2 or none
+heat_source: flow          # optional: hppower or flow, default from the model
+```
+
+`type` is taken by Home Assistant (it names the card), so the option is called `model`. All models share the same diagram; the model sets defaults:
+
+| | `enviline` | `compress_5800i` |
+| --- | --- | --- |
+| Indoor unit name | EnviLine Tower | Compress 5800i AW indoor unit |
+| Default `refrigerant` | – | R290 |
+| Heat output | `hppower` | Calculated: PC0 flow × (TC1 − TC0) × 1.163 W per l/h per K |
+
+On the 5800i, `hppower` ("compressor power output") reads about the same as the electrical power, so the card calculates the heat output from the PC0 flow instead. Set `heat_source: hppower` if that turns out to be wrong on your unit.
+
+Sensors that only some models have are shown when they exist: `hpcurrpower` (live compressor power, used as `electric_power` when you have not set your own meter), `pc0flow` (PC0 flow rate) and `fanspd` (outdoor fan speed).
+
+`buffer` picks how the buffer tank is connected:
+
+- `4`: in line, with four connections: heat pump flow in and return out on one side, the heating circuit on the other (Nefit Tower-Solar schema).
+- `2`: on two T-pieces, the top connection on the flow and the bottom one on the return.
+- `none`: no buffer tank; the T0 label sits on the flow pipe.
+
 | Key | EMS-ESP | Meaning |
 | --- | --- | --- |
 | `hpcompspd` | boiler | Compressor speed (also drives the animation) |
@@ -76,7 +104,9 @@ entities:
 | `pc1on` | boiler | Underfloor heating pump PC1 |
 | `wwcurtemp`, `hptw1` | boiler | Hot water top / TW1 |
 | `hppower` | boiler | Heat output |
-| `electric_power` | – | Electrical power of the heat pump (any W or kW sensor) |
+| `electric_power` | – / boiler | Electrical power of the heat pump (any W or kW sensor); auto-detects `hpcurrpower` when available |
+| `pc0flow` | boiler | Primary pump PC0 flow rate (l/h) |
+| `fanspd` | boiler | Outdoor unit fan speed |
 | `cop` | – | COP sensor; if empty it is calculated from `hppower` and `electric_power` while the compressor runs |
 | `nrgsupptotal`, `nrgconstotal` | boiler | Lifetime energy supplied / consumed, used for the SCOP fallback |
 | `currtemp`, `seltemp`, `dampedoutdoortemp` | thermostat | Room temperature, setpoint, damped outdoor temperature |
@@ -89,7 +119,7 @@ Set `refrigerant` (see the type plate of the outdoor unit) to also show PL1 and 
 
 ## Without a separate power meter
 
-EMS-ESP has no live electrical power for the EnviLine, so `electric_power` has to come from a separate meter (kWh meter, smart plug, P1 sub-meter). Without one, the *Electric* and *COP* labels are hidden and the card shows **SCOP** instead: `nrgsupptotal / nrgconstotal`, the seasonal COP since installation from the EMS-ESP energy counters (backup heater included). The remaining power labels move up so no gap is left.
+EMS-ESP has no live electrical power for the EnviLine (the 5800i has `hpcurrpower`), so `electric_power` has to come from a separate meter (kWh meter, smart plug, P1 sub-meter). Without one, the *Electric* and *COP* labels are hidden and the card shows **SCOP** instead: `nrgsupptotal / nrgconstotal`, the seasonal COP since installation from the EMS-ESP energy counters (backup heater included). The remaining power labels move up so no gap is left.
 
 ## Notes
 
