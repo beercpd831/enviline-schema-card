@@ -48,9 +48,10 @@ const MODELS = {
 };
 
 // Buffer tank layouts: 4 = in line with four connections (heat pump in/out,
-// heating circuit in/out), 2 = on T-pieces between flow and return,
-// none = no buffer tank.
-const BUFFERS = ["4", "2", "none"];
+// heating circuit in/out), tee = two connections on T-pieces between flow
+// and return (hydraulic separation, needs PC1), series = two connections in
+// series in the return line (extra volume only), none = no buffer tank.
+const BUFFERS = ["4", "tee", "series", "none"];
 
 // key: [domain, EMS-ESP suffix used for auto-detection]
 const ENTITY_DEFS = {
@@ -321,7 +322,19 @@ function bufferSvg(mode, t) {
   const flow = `<path d="M602 295 H904" fill="none" stroke="#e53935" stroke-width="5"/>`;
   const pipes = `<path d="M936 295 H1010 V325 H895 V355 H1010 V385 H895 V415 H1010 V445 H895 V475 H1010 V500 H870" fill="none" stroke="#e57373" stroke-width="4" stroke-linejoin="round"/>
   <path d="M870 500 H792 V600 H771" fill="none" stroke="#1e88e5" stroke-width="5"/>`;
-  if (mode === "2") {
+  if (mode === "series") {
+    // In series in the return line: all return water flows through the tank.
+    return {
+      flow,
+      pipes: `<path d="M936 295 H1010 V325 H895 V355 H1010 V385 H895 V415 H1010 V445 H895 V475 H1010 V500 H870" fill="none" stroke="#e57373" stroke-width="4" stroke-linejoin="round"/>
+  <path d="M820 500 H792 V600 H771" fill="none" stroke="#1e88e5" stroke-width="5"/>`,
+      tank: `<rect x="820" y="440" width="50" height="120" rx="22" fill="#9e9e9e" fill-opacity="0.15" stroke="#9e9e9e" stroke-width="2"/>
+  <rect x="822" y="442" width="46" height="116" rx="20" fill="#1e88e5" fill-opacity="0.15"/>`,
+      text: `<text x="845" y="580">${t.buffer}</text>`,
+      t0: t0(875, 295),
+    };
+  }
+  if (mode === "tee") {
     // On T-pieces: top connection on the flow, bottom connection on the return.
     return {
       flow,
@@ -560,6 +573,7 @@ class EnvilineSchemaCard extends HTMLElement {
   _buffer() {
     const b = String(this._config.buffer ?? "4").toLowerCase();
     if (b === "0" || b === "false" || b === "no" || b === "geen") return "none";
+    if (b === "2") return "tee";
     return BUFFERS.includes(b) ? b : "4";
   }
 
@@ -662,7 +676,7 @@ class EnvilineSchemaCard extends HTMLElement {
 
     root.querySelectorAll(".lbl").forEach((el) => {
       const key = el.dataset.key;
-      const [prefix, desc] = key === "curflowtemp" && this._buffer() === "none" ? t.d.curflowtemp_nobuf : t.d[key];
+      const [prefix, desc] = key === "curflowtemp" && ["none", "series"].includes(this._buffer()) ? t.d.curflowtemp_nobuf : t.d[key];
       let text;
       let title = `${desc}\n${t.history}`;
       // T0 and headertemp are the same sensor in the buffer tank; either one fills the label.
@@ -776,8 +790,8 @@ const EDITOR_GROUPS = [
   ["room", ["currtemp", "seltemp", "dampedoutdoortemp"]],
 ];
 const GROUP_TITLES = {
-  nl: { refrigerant: "Koudemiddel en compressor", outdoor: "Buitenunit", water: "Watercircuit", dhw: "Warm water", power: "Vermogen", room: "Thermostaat", auto: "EMS-ESP-entiteiten automatisch zoeken", transparent: "Transparante achtergrond", max_width: "Maximale breedte (%)", language: "Taal (leeg = HA-taal)", refrigerant: "Koudemiddel (voor druk in bar, zie typeplaatje)", model: "Model warmtepomp", title_indoor: "Naam binnendeel (leeg = volgens model)", buffer: "Buffervat", heat_source: "Warmtevermogen (leeg = volgens model)", buffer_4: "In lijn, 4 aansluitingen", buffer_2: "Op T-stukken, 2 aansluitingen", buffer_none: "Geen buffervat", heat_hppower: "EMS-ESP hppower", heat_flow: "Berekend uit debiet PC0 en TC1 − TC0" },
-  en: { refrigerant: "Refrigerant and compressor", outdoor: "Outdoor unit", water: "Water circuit", dhw: "Hot water", power: "Power", room: "Thermostat", auto: "Auto-detect EMS-ESP entities", transparent: "Transparent background", max_width: "Maximum width (%)", language: "Language (empty = HA language)", refrigerant: "Refrigerant (for pressure in bar, see type plate)", model: "Heat pump model", title_indoor: "Indoor unit name (empty = from model)", buffer: "Buffer tank", heat_source: "Heat output (empty = from model)", buffer_4: "In line, 4 connections", buffer_2: "On T-pieces, 2 connections", buffer_none: "No buffer tank", heat_hppower: "EMS-ESP hppower", heat_flow: "Calculated from PC0 flow and TC1 − TC0" },
+  nl: { refrigerant: "Koudemiddel en compressor", outdoor: "Buitenunit", water: "Watercircuit", dhw: "Warm water", power: "Vermogen", room: "Thermostaat", auto: "EMS-ESP-entiteiten automatisch zoeken", transparent: "Transparante achtergrond", max_width: "Maximale breedte (%)", language: "Taal (leeg = HA-taal)", refrigerant: "Koudemiddel (voor druk in bar, zie typeplaatje)", model: "Model warmtepomp", title_indoor: "Naam binnendeel (leeg = volgens model)", buffer: "Buffervat", heat_source: "Warmtevermogen (leeg = volgens model)", buffer_4: "In lijn, 4 aansluitingen", buffer_tee: "Op T-stukken, 2 aansluitingen (ontkoppeling)", buffer_series: "In serie in de retour, 2 aansluitingen", buffer_none: "Geen buffervat", heat_hppower: "EMS-ESP hppower", heat_flow: "Berekend uit debiet PC0 en TC1 − TC0" },
+  en: { refrigerant: "Refrigerant and compressor", outdoor: "Outdoor unit", water: "Water circuit", dhw: "Hot water", power: "Power", room: "Thermostat", auto: "Auto-detect EMS-ESP entities", transparent: "Transparent background", max_width: "Maximum width (%)", language: "Language (empty = HA language)", refrigerant: "Refrigerant (for pressure in bar, see type plate)", model: "Heat pump model", title_indoor: "Indoor unit name (empty = from model)", buffer: "Buffer tank", heat_source: "Heat output (empty = from model)", buffer_4: "In line, 4 connections", buffer_tee: "On T-pieces, 2 connections (hydraulic separation)", buffer_series: "In series in the return, 2 connections", buffer_none: "No buffer tank", heat_hppower: "EMS-ESP hppower", heat_flow: "Calculated from PC0 flow and TC1 − TC0" },
 };
 
 class EnvilineSchemaCardEditor extends HTMLElement {
@@ -817,7 +831,7 @@ class EnvilineSchemaCardEditor extends HTMLElement {
     }
     this._form.hass = this._hass;
     // Show 100 % on the slider when max_width is not set (full width).
-    this._form.data = { max_width: 100, model: "enviline", ...this._config, buffer: this._config.buffer === undefined ? "4" : String(this._config.buffer) };
+    this._form.data = { max_width: 100, model: "enviline", ...this._config, buffer: this._config.buffer === undefined ? "4" : String(this._config.buffer) === "2" ? "tee" : String(this._config.buffer) };
     this._form.schema = [
       { name: "model", selector: { select: { mode: "dropdown", options: [{ value: "enviline", label: "Nefit-Bosch EnviLine" }, { value: "compress_5800i", label: "Bosch Compress 5800i AW" }] } } },
       { name: "title_indoor", selector: { text: {} } },

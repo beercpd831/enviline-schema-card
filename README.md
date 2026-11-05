@@ -57,7 +57,7 @@ entities:
 type: custom:enviline-schema-card
 model: compress_5800i      # enviline (default) or compress_5800i
 title_indoor: Compress 5800i AW   # optional, overrides the name of the indoor unit
-buffer: 2                  # 4 (default), 2 or none
+buffer: tee                # 4 (default), tee, series or none
 heat_source: flow          # optional: hppower or flow, default from the model
 ```
 
@@ -76,8 +76,11 @@ Sensors that only some models have are shown when they exist: `hpcurrpower` (liv
 `buffer` picks how the buffer tank is connected:
 
 - `4`: in line, with four connections: heat pump flow in and return out on one side, the heating circuit on the other (Nefit Tower-Solar schema).
-- `2`: on two T-pieces, the top connection on the flow and the bottom one on the return.
-- `none`: no buffer tank; the T0 label sits on the flow pipe.
+- `tee` (or `2`): two connections on T-pieces, the top one on the flow and the bottom one on the return. This is hydraulic separation, like a low-loss header: the primary pump circulates heat pump → flow tee → tank → return tee, and PC1 circulates flow tee → floor → return tee → tank. It is not a short circuit across one pump, but it only works with a second pump (PC1).
+- `series`: two connections in series in the return line. All return water flows through the tank; it adds volume (for defrosting) but no separation, and there is often no PC1.
+- `none`: no buffer tank.
+
+With `series` and `none` the T0 label sits on the flow pipe.
 
 | Key | EMS-ESP | Meaning |
 | --- | --- | --- |
