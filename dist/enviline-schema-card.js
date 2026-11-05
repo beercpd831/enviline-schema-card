@@ -391,6 +391,7 @@ function buildSvg(t, ref, opts = {}) {
     <text x="684" y="648">${t.threeway}</text>
     <text x="600" y="362">${t.dhw}</text>
     <text x="950" y="525" font-size="13">${t.floor}</text>
+    <text x="920" y="273">PC1</text>
   </g>
   <path id="fw_a" d="M185 128 H150 V180 H110" fill="none" stroke="${C.idle}" stroke-width="4"/>
   <path id="fw_b" d="M295 128 H375 V290" fill="none" stroke="${C.idle}" stroke-width="4"/>
