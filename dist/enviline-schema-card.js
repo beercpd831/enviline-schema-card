@@ -5,7 +5,7 @@
  * MODELS). Entities are auto-detected from the
  * EMS-ESP names and can be overridden per item in the card config.
  */
-const CARD_VERSION = "0.8.0";
+const CARD_VERSION = "0.9.0";
 
 // SVG coordinate system (viewBox 0 -25 1060 770). Label positions are given
 // in SVG units and converted to percentages of the card.
@@ -82,6 +82,8 @@ const ENTITY_DEFS = {
   cop: ["sensor", null],
   nrgsupptotal: ["sensor", "nrgsupptotal"],
   nrgconstotal: ["sensor", "nrgconstotal"],
+  nrgtotal: ["sensor", "nrgtotal"],
+  metertotal: ["sensor", "metertotal"],
   auxheaterstatus: ["sensor", "auxheaterstatus"],
   ww3wayvalve: ["binary_sensor", "ww3wayvalve"],
   wwcurtemp: ["sensor", "wwcurtemp"],
@@ -150,6 +152,8 @@ const I18N = {
       scop: ["SCOP ", "Seizoens-COP sinds installatie: opgewekte energie gedeeld door energieverbruik (EMS-ESP-tellers, inclusief bijverwarming)"],
       nrgsupptotal: ["", "Totaal opgewekte energie (EMS-ESP)"],
       nrgconstotal: ["", "Totaal energieverbruik (EMS-ESP)"],
+      nrgtotal: ["", "Totaal opgewekte energie, nieuwere warmtepompen zoals 5800i (EMS-ESP nrgtotal)"],
+      metertotal: ["", "Totaal energieverbruik, nieuwere warmtepompen zoals 5800i (EMS-ESP metertotal)"],
       auxheaterstatus: ["", "Status elektrische bijverwarming"],
       ww3wayvalve: ["", "3-wegklep warm water"],
       wwcurtemp: ["Boven ", "Warm water - interne temperatuur"],
@@ -218,6 +222,8 @@ const I18N = {
       scop: ["SCOP ", "Seasonal COP since installation: energy supplied divided by energy consumed (EMS-ESP counters, backup heater included)"],
       nrgsupptotal: ["", "Total energy supplied (EMS-ESP)"],
       nrgconstotal: ["", "Total energy consumed (EMS-ESP)"],
+      nrgtotal: ["", "Total energy supplied, newer heat pumps such as the 5800i (EMS-ESP nrgtotal)"],
+      metertotal: ["", "Total energy consumed, newer heat pumps such as the 5800i (EMS-ESP metertotal)"],
       auxheaterstatus: ["", "Electric backup heater status"],
       ww3wayvalve: ["", "Hot water 3-way valve"],
       wwcurtemp: ["Top ", "Hot water - internal temperature"],
@@ -517,10 +523,15 @@ function autoDetect(hass, key) {
 }
 
 // Labels without an entity of their own open this one's history on click.
-const FALLBACK_ENTITY = { scop: "nrgsupptotal", superheat_suction: "hptr5", superheat_discharge: "hptr6", curflowtemp: "headertemp" };
+const FALLBACK_ENTITY = { superheat_suction: "hptr5", superheat_discharge: "hptr6", curflowtemp: "headertemp" };
 
 // Calculated superheat: [gas temperature, saturation temperature from the pressure sensor]
 const SUPERHEAT = { superheat_suction: ["hptr5", "hppl1"], superheat_discharge: ["hptr6", "hpph1"] };
+
+// Energy counter pairs for SCOP, [supplied, consumed]. The EnviLine fills the
+// first pair; newer heat pumps (5800i) fill nrgtotal / metertotal instead
+// and may leave the first pair at 0.
+const SCOP_PAIRS = [["nrgsupptotal", "nrgconstotal"], ["nrgtotal", "metertotal"]];
 
 class EnvilineSchemaCard extends HTMLElement {
   static getConfigElement() {
@@ -593,6 +604,25 @@ class EnvilineSchemaCard extends HTMLElement {
     return (flow * Math.abs(tc1 - tc0) * 1.163) / 1000;
   }
 
+  // First counter pair with both values above 0: [supplied key, consumed key, scop].
+  _scop() {
+    for (const [s, c] of SCOP_PAIRS) {
+      const supp = this._num(s);
+      const cons = this._num(c);
+      if (supp > 0 && cons > 0) return [s, c, supp / cons];
+    }
+    return undefined;
+  }
+
+  // show_scop: true = always, false = never, unset = only when no live COP
+  // is possible (no electric_power and no cop entity).
+  _showScop() {
+    const v = this._config.show_scop;
+    if (v === true || v === "true" || v === "always") return true;
+    if (v === false || v === "false" || v === "never") return false;
+    return !this._entity("electric_power") && !this._entity("cop");
+  }
+
   _entity(key) {
     const configured = this._config.entities[key];
     if (configured) return configured;
@@ -660,6 +690,7 @@ class EnvilineSchemaCard extends HTMLElement {
         ev.stopPropagation();
         let key = el.dataset.key;
         if (key === "hppower" && this._heatSource() === "flow") key = "pc0flow";
+        if (key === "scop") key = (this._scop() || SCOP_PAIRS[0])[0];
         const entityId = this._entity(key) || this._entity(FALLBACK_ENTITY[key]);
         if (!entityId) return;
         this.dispatchEvent(new CustomEvent("hass-more-info", { bubbles: true, composed: true, detail: { entityId } }));
@@ -719,10 +750,9 @@ class EnvilineSchemaCard extends HTMLElement {
         if (gas !== undefined && sat !== undefined) text = `${prefix}${this._fmt1(gas - sat)} K`;
       }
       // SCOP from the EMS-ESP energy counters, as fallback when no live COP is possible.
-      if (key === "scop" && !this._entity("electric_power") && !this._entity("cop")) {
-        const supp = this._num("nrgsupptotal");
-        const cons = this._num("nrgconstotal");
-        if (supp !== undefined && cons > 0) text = `${prefix}${(supp / cons).toFixed(2)}`;
+      if (key === "scop" && this._showScop()) {
+        const scop = this._scop();
+        if (scop) text = `${prefix}${scop[2].toFixed(2)}`;
       }
       const show = text !== undefined && !hide.includes(key);
       el.hidden = !show;
@@ -787,12 +817,12 @@ const EDITOR_GROUPS = [
   ["outdoor", ["outdoortemp", "hptl2", "fanspd", "hpta4", "hpea0", "hpmode"]],
   ["water", ["hptc3", "hptc1", "hptc0", "curflowtemp", "targetflowtemp", "heatingpump", "hpcircspd", "pc0flow", "ww3wayvalve", "vc0valve", "auxheaterstatus", "headertemp", "pc1on"]],
   ["dhw", ["wwcurtemp", "hptw1"]],
-  ["power", ["hppower", "electric_power", "cop", "nrgsupptotal", "nrgconstotal"]],
+  ["power", ["hppower", "electric_power", "cop", "nrgsupptotal", "nrgconstotal", "nrgtotal", "metertotal"]],
   ["room", ["currtemp", "seltemp", "dampedoutdoortemp"]],
 ];
 const GROUP_TITLES = {
-  nl: { refrigerant: "Koudemiddel en compressor", outdoor: "Buitenunit", water: "Watercircuit", dhw: "Warm water", power: "Vermogen", room: "Thermostaat", auto: "EMS-ESP-entiteiten automatisch zoeken", transparent: "Transparante achtergrond", max_width: "Maximale breedte (%)", language: "Taal (leeg = HA-taal)", refrigerant: "Koudemiddel (voor druk in bar, zie typeplaatje)", model: "Model warmtepomp", title_indoor: "Naam binnendeel (leeg = volgens model)", buffer: "Buffervat", heat_source: "Warmtevermogen (leeg = volgens model)", buffer_4: "In lijn, 4 aansluitingen", buffer_tee: "Op T-stukken, 2 aansluitingen (ontkoppeling)", buffer_series: "In serie in de retour, 2 aansluitingen", buffer_none: "Geen buffervat", heat_hppower: "EMS-ESP hppower", heat_flow: "Berekend uit debiet PC0 en TC1 − TC0" },
-  en: { refrigerant: "Refrigerant and compressor", outdoor: "Outdoor unit", water: "Water circuit", dhw: "Hot water", power: "Power", room: "Thermostat", auto: "Auto-detect EMS-ESP entities", transparent: "Transparent background", max_width: "Maximum width (%)", language: "Language (empty = HA language)", refrigerant: "Refrigerant (for pressure in bar, see type plate)", model: "Heat pump model", title_indoor: "Indoor unit name (empty = from model)", buffer: "Buffer tank", heat_source: "Heat output (empty = from model)", buffer_4: "In line, 4 connections", buffer_tee: "On T-pieces, 2 connections (hydraulic separation)", buffer_series: "In series in the return, 2 connections", buffer_none: "No buffer tank", heat_hppower: "EMS-ESP hppower", heat_flow: "Calculated from PC0 flow and TC1 − TC0" },
+  nl: { refrigerant: "Koudemiddel en compressor", outdoor: "Buitenunit", water: "Watercircuit", dhw: "Warm water", power: "Vermogen", room: "Thermostaat", auto: "EMS-ESP-entiteiten automatisch zoeken", transparent: "Transparante achtergrond", max_width: "Maximale breedte (%)", language: "Taal (leeg = HA-taal)", refrigerant: "Koudemiddel (voor druk in bar, zie typeplaatje)", model: "Model warmtepomp", title_indoor: "Naam binnendeel (leeg = volgens model)", buffer: "Buffervat", heat_source: "Warmtevermogen (leeg = volgens model)", buffer_4: "In lijn, 4 aansluitingen", buffer_tee: "Op T-stukken, 2 aansluitingen (ontkoppeling)", buffer_series: "In serie in de retour, 2 aansluitingen", buffer_none: "Geen buffervat", heat_hppower: "EMS-ESP hppower", heat_flow: "Berekend uit debiet PC0 en TC1 − TC0", show_scop: "SCOP tonen", scop_auto: "Alleen zonder live COP (geen elektrisch vermogen)", scop_always: "Altijd", scop_never: "Nooit" },
+  en: { refrigerant: "Refrigerant and compressor", outdoor: "Outdoor unit", water: "Water circuit", dhw: "Hot water", power: "Power", room: "Thermostat", auto: "Auto-detect EMS-ESP entities", transparent: "Transparent background", max_width: "Maximum width (%)", language: "Language (empty = HA language)", refrigerant: "Refrigerant (for pressure in bar, see type plate)", model: "Heat pump model", title_indoor: "Indoor unit name (empty = from model)", buffer: "Buffer tank", heat_source: "Heat output (empty = from model)", buffer_4: "In line, 4 connections", buffer_tee: "On T-pieces, 2 connections (hydraulic separation)", buffer_series: "In series in the return, 2 connections", buffer_none: "No buffer tank", heat_hppower: "EMS-ESP hppower", heat_flow: "Calculated from PC0 flow and TC1 − TC0", show_scop: "Show SCOP", scop_auto: "Only without live COP (no electrical power)", scop_always: "Always", scop_never: "Never" },
 };
 
 class EnvilineSchemaCardEditor extends HTMLElement {
@@ -823,6 +853,8 @@ class EnvilineSchemaCardEditor extends HTMLElement {
         if (!config.refrigerant) delete config.refrigerant;
         if (!config.title_indoor) delete config.title_indoor;
         if (!config.heat_source) delete config.heat_source;
+        if (!config.show_scop || config.show_scop === "auto") delete config.show_scop;
+        else config.show_scop = config.show_scop === "always" ? true : config.show_scop === "never" ? false : config.show_scop;
         if (!config.model || config.model === "enviline") delete config.model;
         if (!config.buffer || config.buffer === "4") delete config.buffer;
         if (!config.max_width || config.max_width >= 100) delete config.max_width;
@@ -832,12 +864,14 @@ class EnvilineSchemaCardEditor extends HTMLElement {
     }
     this._form.hass = this._hass;
     // Show 100 % on the slider when max_width is not set (full width).
-    this._form.data = { max_width: 100, model: "enviline", ...this._config, buffer: this._config.buffer === undefined ? "4" : String(this._config.buffer) === "2" ? "tee" : String(this._config.buffer) };
+    const sc = this._config.show_scop;
+    this._form.data = { max_width: 100, model: "enviline", ...this._config, show_scop: sc === true ? "always" : sc === false ? "never" : sc || "auto", buffer: this._config.buffer === undefined ? "4" : String(this._config.buffer) === "2" ? "tee" : String(this._config.buffer) };
     this._form.schema = [
       { name: "model", selector: { select: { mode: "dropdown", options: [{ value: "enviline", label: "Nefit-Bosch EnviLine" }, { value: "compress_5800i", label: "Bosch Compress 5800i AW" }] } } },
       { name: "title_indoor", selector: { text: {} } },
       { name: "buffer", selector: { select: { mode: "dropdown", options: BUFFERS.map((b) => ({ value: b, label: g[`buffer_${b}`] })) } } },
       { name: "heat_source", selector: { select: { mode: "dropdown", options: [{ value: "hppower", label: g.heat_hppower }, { value: "flow", label: g.heat_flow }] } } },
+      { name: "show_scop", selector: { select: { mode: "dropdown", options: ["auto", "always", "never"].map((v) => ({ value: v, label: g[`scop_${v}`] })) } } },
       { name: "auto_detect", selector: { boolean: {} } },
       { name: "transparent", selector: { boolean: {} } },
       { name: "max_width", selector: { number: { min: 20, max: 100, step: 5, mode: "slider", unit_of_measurement: "%" } } },
@@ -856,7 +890,7 @@ class EnvilineSchemaCardEditor extends HTMLElement {
       if (s.name === "max_width") return g.max_width;
       if (s.name === "language") return g.language;
       if (s.name === "refrigerant") return g.refrigerant;
-      if (["model", "title_indoor", "buffer", "heat_source"].includes(s.name)) return g[s.name];
+      if (["model", "title_indoor", "buffer", "heat_source", "show_scop"].includes(s.name)) return g[s.name];
       const def = d[s.name];
       if (!def) return s.name;
       const found = this._config.entities?.[s.name] ? "" : autoDetect(this._hass, s.name);

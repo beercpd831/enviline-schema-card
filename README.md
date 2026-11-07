@@ -45,6 +45,7 @@ max_width: 80              # optional: limit the width (in % of the card, or e.g
 language: nl               # nl or en, default = HA language
 refrigerant: R410A         # R410A, R32 or R290: also show PL1/PH1 as pressure in bar
 hide: [hpea0, hptr1]       # labels to leave out
+show_scop: true            # SCOP: true = always, false = never, unset = only without live COP
 entities:
   electric_power: sensor.power_meter_heat_pump   # not from EMS-ESP
   cop: sensor.cop_heat_pump                      # optional, otherwise calculated
@@ -111,7 +112,8 @@ With `series` and `none` the T0 label sits on the flow pipe.
 | `pc0flow` | boiler | Primary pump PC0 flow rate (l/h) |
 | `fanspd` | boiler | Outdoor unit fan speed |
 | `cop` | – | COP sensor; if empty it is calculated from `hppower` and `electric_power` while the compressor runs |
-| `nrgsupptotal`, `nrgconstotal` | boiler | Lifetime energy supplied / consumed, used for the SCOP fallback |
+| `nrgsupptotal`, `nrgconstotal` | boiler | Lifetime energy supplied / consumed, used for SCOP |
+| `nrgtotal`, `metertotal` | boiler | The same counters on newer heat pumps such as the 5800i; used for SCOP when the pair above is missing or 0 |
 | `currtemp`, `seltemp`, `dampedoutdoortemp` | thermostat | Room temperature, setpoint, damped outdoor temperature |
 
 ### PL1 and PH1 are pressures
@@ -122,7 +124,9 @@ Set `refrigerant` (see the type plate of the outdoor unit) to also show PL1 and 
 
 ## Without a separate power meter
 
-EMS-ESP has no live electrical power for the EnviLine (the 5800i has `hpcurrpower`), so `electric_power` has to come from a separate meter (kWh meter, smart plug, P1 sub-meter). Without one, the *Electric* and *COP* labels are hidden and the card shows **SCOP** instead: `nrgsupptotal / nrgconstotal`, the seasonal COP since installation from the EMS-ESP energy counters (backup heater included). The remaining power labels move up so no gap is left.
+EMS-ESP has no live electrical power for the EnviLine (the 5800i has `hpcurrpower`), so `electric_power` has to come from a separate meter (kWh meter, smart plug, P1 sub-meter). Without one, the *Electric* and *COP* labels are hidden and the card shows **SCOP** instead: `nrgsupptotal / nrgconstotal`, the seasonal COP since installation from the EMS-ESP energy counters (backup heater included). Newer heat pumps such as the 5800i report these counters as `nrgtotal / metertotal`; the card uses that pair when the first one is missing or 0. The remaining power labels move up so no gap is left.
+
+SCOP is hidden by default as soon as a live COP is possible (an `electric_power` or `cop` entity, which includes the auto-detected `hpcurrpower` on the 5800i). Set `show_scop: true` (editor: *Show SCOP* → *Always*) to show it next to the live COP, or `show_scop: false` to never show it.
 
 ## Notes
 
