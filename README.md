@@ -68,9 +68,9 @@ heat_source: flow          # optional: hppower or flow, default from the model
 | --- | --- | --- |
 | Indoor unit name | EnviLine Tower | Compress 5800i AW indoor unit |
 | Default `refrigerant` | – | R290 |
-| Heat output | `hppower` | Calculated: PC0 flow × (TC1 − TC0) × 1.163 W per l/h per K |
+| Heat output | `hppower` | `hppower` |
 
-On the 5800i, `hppower` ("compressor power output") reads about the same as the electrical power, so the card calculates the heat output from the PC0 flow instead. Set `heat_source: hppower` if that turns out to be wrong on your unit.
+`heat_source: flow` calculates the heat output as PC0 flow × (TC1 − TC0) × 1.163 W per l/h per K instead. It needs `pc0flow`, `hptc1` and `hptc0`; when one of them is missing the card falls back to `hppower`, so *Heat* and *COP* stay visible.
 
 Sensors that only some models have are shown when they exist: `hpcurrpower` (live compressor power, used as `electric_power` when you have not set your own meter), `pc0flow` (PC0 flow rate) and `fanspd` (outdoor fan speed).
 

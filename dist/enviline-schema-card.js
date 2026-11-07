@@ -40,11 +40,11 @@ const REFRIGERANTS = {
 //   title: name of the indoor unit frame
 //   refrigerant: default for the `refrigerant` option
 //   heat_source: "hppower" = EMS-ESP heat output, "flow" = calculated from
-//   PC0 flow and TC1 - TC0 (the 5800i reports hppower close to the
-//   electrical power, so it is not used as heat output there)
+//   PC0 flow and TC1 - TC0. Both models default to hppower: a 5800i user
+//   confirmed hppower works and the flow calculation did not (no pc0flow).
 const MODELS = {
   enviline: { title: { nl: "EnviLine Tower", en: "EnviLine Tower" }, heat_source: "hppower" },
-  compress_5800i: { title: { nl: "Compress 5800i AW binnendeel", en: "Compress 5800i AW indoor unit" }, refrigerant: "R290", heat_source: "flow" },
+  compress_5800i: { title: { nl: "Compress 5800i AW binnendeel", en: "Compress 5800i AW indoor unit" }, refrigerant: "R290", heat_source: "hppower" },
 };
 
 // Buffer tank layouts: 4 = in line with four connections (heat pump in/out,
@@ -595,8 +595,13 @@ class EnvilineSchemaCard extends HTMLElement {
 
   // Heat output in kW: from EMS-ESP hppower, or from the PC0 flow rate and
   // the temperature rise TC0 -> TC1 (1.163 W per l/h per K for water).
+  // With heat_source flow and no usable flow data, hppower is used instead.
   _heat() {
-    if (this._heatSource() !== "flow") return this._num("hppower");
+    return this._flowHeat() ?? this._num("hppower");
+  }
+
+  _flowHeat() {
+    if (this._heatSource() !== "flow") return undefined;
     const flow = this._num("pc0flow");
     const tc1 = this._num("hptc1");
     const tc0 = this._num("hptc0");
@@ -689,7 +694,7 @@ class EnvilineSchemaCard extends HTMLElement {
       el.addEventListener("click", (ev) => {
         ev.stopPropagation();
         let key = el.dataset.key;
-        if (key === "hppower" && this._heatSource() === "flow") key = "pc0flow";
+        if (key === "hppower" && this._flowHeat() !== undefined) key = "pc0flow";
         if (key === "scop") key = (this._scop() || SCOP_PAIRS[0])[0];
         const entityId = this._entity(key) || this._entity(FALLBACK_ENTITY[key]);
         if (!entityId) return;
@@ -712,7 +717,7 @@ class EnvilineSchemaCard extends HTMLElement {
       let text;
       let title = `${desc}\n${t.history}`;
       // T0 and headertemp are the same sensor in the buffer tank; either one fills the label.
-      const heatFromFlow = key === "hppower" && this._heatSource() === "flow";
+      const heatFromFlow = key === "hppower" && this._flowHeat() !== undefined;
       const so = heatFromFlow ? undefined : this._stateObj(key) || (key === "curflowtemp" ? this._stateObj("headertemp") : undefined);
       if (heatFromFlow) {
         const heat = this._heat();
